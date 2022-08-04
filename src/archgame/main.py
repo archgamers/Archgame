@@ -1,1 +1,4 @@
-print("Hello, world, this's the best game that's ever been!")
+from archgame import game
+
+if __name__ == "__main__":
+    game.main()
