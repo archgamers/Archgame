@@ -6,6 +6,7 @@ from archgame import texts
 
 def main(): #- общий план того что делает программа
     gui = cli.Cli()
+    ev = events.Events()
     boards = gui.intro()
     gui.first_sprint()
 
@@ -13,6 +14,7 @@ def main(): #- общий план того что делает программ
     num_sprint = 2
     while winner == None:
         gui.begin(boards, num_sprint)
+        gui.print_board(boards)
 
         for b in boards:
             add_u, add_c = gui.ask(b)
@@ -20,17 +22,14 @@ def main(): #- общий план того что делает программ
                 component, num = i
                 b.change_component(component, num)
             b.users = min((add_u + b.users), b.cap(b.quantity_component(texts.API), b.quantity_component(texts.DB), b.quantity_component(texts.LB)))
-            gui.print_board(b)
-
-        #ТЕСТ, потом уберу, как отлаживать всё окончу
-        print("счет игроков:")
-        for n in boards:
-            print(n.name, n.users)
+        gui.print_board(boards)
 
         #разыграть рандомные события
         for num in range(len(boards)):
-            events.random_event(boards, num)
-            #Проверка после эвента: тянет ли своих пользователей теперь его конструкция
+            ev.random_event(boards, num, gui)
+
+        #Проверка после эвента: тянет ли своих пользователей после действий ВСЕХ теперь его конструкция
+        for num in range(len(boards)):
             boards[num].users = min(boards[num].users, boards[num].cap(boards[num].quantity_component(texts.API), boards[num].quantity_component(texts.DB), boards[num].quantity_component(texts.LB)))
 
         #Условие победы пока не определено, поставила первое попавшееся
