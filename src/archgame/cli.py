@@ -2,6 +2,9 @@ from archgame import texts
 from archgame import obj
 from archgame import constants
 
+class InvalidUserInput(Exception):
+    pass
+
 class Cli:
     def __int__(self):
         pass
@@ -31,7 +34,7 @@ class Cli:
                 s += [b.board[i]]
             line_u = "Users:" + str(b.users)
             lines[5] += line_u + " " * (11-len(line_u))
-            line_c = "Cap:" + str(b.cap(b.quantity_component(texts.API), b.quantity_component(texts.DB), b.quantity_component(texts.LB)))
+            line_c = "Cap:" + str(b.cap(b.quantity_component(constants.API), b.quantity_component(constants.DB), b.quantity_component(constants.LB)))
             lines[6] += line_c + " " * (11-len(line_c))
         for l in lines: print(l)
 
@@ -48,17 +51,56 @@ class Cli:
         print(texts.SPRINTS % num_sprint)
         print(texts.DESC)
 
-    #вернет массив вида 1) скольк надо добавить u  2) [[компонент, номер ячейки], [...]...]
-    def ask(self, b):
-        inpt_str = input(texts.INPUT_ACTION % b.name).strip().split(",")
-        ans = [0, []]
-        for i in inpt_str:
-            if i[0] == "1": #добавить юзеров
-                ans[0] += 1
-            if i[0] == "2": # добавить компонент
-                two, comp, number = i.strip().split("-")
-                ans[1].append([comp, int(number)])
-        return(ans)
+    # #вернет массив вида 1) скольк надо добавить u  2) [[компонент, номер ячейки], [...]...]
+    # def ask(self, b):
+    #     inpt_str = input(texts.INPUT_ACTION % b.name).strip().split(",")
+    #     ans = [0, []]
+    #     for i in inpt_str:
+    #         if i[0] == "1": #добавить юзеров
+    #             ans[0] += 1
+    #         if i[0] == "2": # добавить компонент
+    #             two, comp, number = i.strip().split("-")
+    #             ans[1].append([comp, int(number)])
+    #     return(ans)
+    @staticmethod
+    def validate_input_user(choices, lim_points):
+        if len(choices) > lim_points:
+            raise InvalidUserInput
+        for choice in choices:
+            if '-' in choice:
+                input_list = choice.split('-')
+                if len(input_list) != 3:
+                    raise InvalidUserInput
+                _, component, num_cell = choice.split('-')
+                if num_cell.isdigit() == False:
+                    raise InvalidUserInput
+                num_cell = int(num_cell)
+                if component not in constants.POSSIBLE_INPUTS:
+                    raise InvalidUserInput
+                if 0 > num_cell or num_cell > constants.SIZE_BOARD ** 2 + 1:
+                    raise InvalidUserInput
+
+            elif choice != '1':
+                raise InvalidUserInput
+
+    def ask(self, b, default=constants.LIM_POINTS):
+        while True:
+            try:
+                inpt_str = input(texts.INPUT_ACTION % b.name).strip()
+                choices = inpt_str.split(',')
+                self.validate_input_user(choices, default)
+                ans = [0, []]
+                for i in choices:
+                    if i[0] == "1":  # добавить юзеров
+                        ans[0] += 1
+                    if i[0] == "2":  # добавить компонент
+                        two, comp, number = i.strip().split("-")
+                        ans[1].append([comp, int(number)])
+                return ans
+            except InvalidUserInput:
+                print('Некорректный ввод, пожалуйста, попробуйте снова,\nПомните, что на ход вам даётся %d очка' % default)
+
+
 
     def final(self, winner):
         print(texts.ENDING % winner)

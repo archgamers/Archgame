@@ -7,13 +7,13 @@ class Board:
     def __init__(self, name):
         self.name = name
         self.users = 1
-        self.board = [texts.EMPTY_CELL] * (constants.SIZE_BOARD**2)
+        self.board = [constants.EMPTY_CELL] * (constants.SIZE_BOARD**2)
 
     #На начло игры на всех полях стандартное расположение 1 A, 6 D, 11 B; u 1
     def default(self):
-        self.board[1-1] = texts.API
-        self.board[6 - 1] = texts.DB
-        self.board[11 - 1] = texts.BCKP
+        self.board[1-1] = constants.API
+        self.board[6 - 1] = constants.DB
+        self.board[11 - 1] = constants.BCKP
         self.users = 1
 
     def change_users(self, number):
@@ -23,7 +23,7 @@ class Board:
         self.board[num-1] = comp
 
     def del_component(self, num):
-        self.board[num - 1] = texts.EMPTY_CELL
+        self.board[num - 1] = constants.EMPTY_CELL
 
     def quantity_component(self, comp):
         return self.board.count(comp)
@@ -40,7 +40,7 @@ class Board:
 
     # если путо - True, если нет - False
     def is_cell_empty(self,num):
-        if self.board[num-1] == texts.EMPTY_CELL:
+        if self.board[num-1] == constants.EMPTY_CELL:
             return True
         else:
             return False
