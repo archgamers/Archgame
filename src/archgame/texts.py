@@ -13,8 +13,7 @@ L - LoadBalancer: Позволяет масштабировать API, без н
     обслуживать не больше {2}х API
 
 B - Backup: В случае ошибки DBA позволяет избежать потери пользовательской
-    базы, но снимается с игрового поля. В случае потери DB при возврате ее назад
-    позволяет вернуть часть пользовательской базы, но не более {3}к.""".format(constants.LIM_A, constants.LIM_D, constants.LIM_L, constants.LIM_B)
+    базы, но снимается с игрового поля.""".format(constants.LIM_A, constants.LIM_D, constants.LIM_L)
 
 SPRINTS = "Спринт %d:"
 

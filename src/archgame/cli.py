@@ -10,7 +10,7 @@ class Cli:
         pass
 
     def cli_print(self, texts):
-        print(" ".join(texts))
+        input(" ".join(texts))
 
     #НЕДОДЕЛКИ
     #Надо написать первый спринт, пока без него
