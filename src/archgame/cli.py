@@ -1,16 +1,32 @@
+import sys
+import time
+
 from archgame import texts
 from archgame import obj
 from archgame import constants
 
+
 class InvalidUserInput(Exception):
     pass
+
+
+input_speed = {
+    '\n': 0.5,
+}
+
 
 class Cli:
     def __int__(self):
         pass
 
     def cli_print(self, texts):
-        input(" ".join(texts))
+        for line in texts:
+            print('')
+            for char in line:
+                sys.stdout.write(char)
+                sys.stdout.flush()
+                time.sleep(input_speed.get(char, 0.03))
+        input('')
 
     #НЕДОДЕЛКИ
     #Надо написать первый спринт, пока без него
@@ -48,6 +64,7 @@ class Cli:
         return boards
 
     def begin(self, boards, num_sprint):
+        print('\n\n\n')
         print(texts.SPRINTS % num_sprint)
         print(texts.DESC)
 
