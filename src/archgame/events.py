@@ -1,139 +1,282 @@
-from archgame import texts
 from archgame import constants
 import random
+
+import inspect
+import sys
+
 
 #Во все события передавать всё одинаково!
 #Когда буду делать отображение надписей для событий - передавать во все объект Cli ещё!!!
 
+
+class BaseEvent(object):
+    short_text = ''
+    long_text = ''
+    immunity_text = ''
+    cards_count = 1
+
+    @property
+    def random_long_text(self):
+        if type(self.long_text) == list:
+            return random.choice(self.long_text)
+        return self.long_text
+
+    def apply(self, boards, num):
+        # If applied - return True or tuple which will be formatted into
+        #   output string.
+        raise NotImplementedError()
+
+    def act(self, boards, num, gui):
+        response = [boards[num].name + ":", self.random_long_text]
+        result = self.apply(boards, num)
+        if result is None:
+            response.append(self.immunity_text)
+        else:
+            response.append(self.short_text % result
+                            if result is not True else self.short_text)
+        gui.cli_print(response)
+
+
 # убрать бэкап, если есть, нет - 0 u
-def dba(boards, num, gui):
-    board = boards[num]
-    if board.is_a_component(constants.BCKP):
-        board.del_component(random.choice(board.all_nums_component(constants.BCKP)))
-    else:
-        board.users = 0
-    gui.cli_print([boards[num].name + ":", texts.TEXT_DBA])
+class DbaEvent(BaseEvent):
+    cards_count = 3
+    short_text = '''Все данные потеряны, а вместе с ними - и клиенты.'''
+    long_text = '''Ваш аутсорсер-DBA в общем чате:
+- начинаю работы по переносу реплики, аффекта не ожидается
+...
+...
+...
+- при переносе реплики я потерял таблицу. данных больше нет.'''
+    immunity_text = '''Либо вы делаете бекапы, либо вы УЖЕ делаете бекапы,
+минус бекап, но база восстановлена.'''
+
+    def apply(self, boards, num):
+        board = boards[num]
+        if board.is_a_component(constants.BCKP):
+            board.del_component(
+                random.choice(board.all_nums_component(constants.BCKP)))
+            return None
+        else:
+            board.users = 0
+            return True
 
 
-def del_api(boards, num, gui):
-    board = boards[num]
-    num_rand_comp = random.choice(board.all_nums_component(constants.API))
-    board.del_component(num_rand_comp)
-    gui.cli_print([boards[num].name + ":", texts.TEXT_DEL_API % num_rand_comp])
+class DelApiEvent(BaseEvent):
+    short_text = 'API №%i потеряна.'
+    long_text = '''Вам повезло, хабра-эффект принёс много клиентов!
+...
+Но одна из API не выдержала и взорвалась :('''
 
-#Добавляет апи на пустое место
-def add_random_api(boards, num, gui):
-    board = boards[num]
-    board.change_component(constants.API, random.choice(board.all_nums_component(constants.EMPTY_CELL)))
-    gui.cli_print([boards[num].name + ":", texts.TEXT_ADD_RANDOM_API])
-
-def add_random_db(boards, num, gui):
-    board = boards[num]
-    board.change_component(constants.DB, random.choice(board.all_nums_component(constants.EMPTY_CELL)))
-    gui.cli_print([boards[num].name + ":", texts.TEXT_ADD_RANDOM_DB])
-
-def add_random_lb(boards, num, gui):
-    board = boards[num]
-    board.change_component(constants.LB, random.choice(board.all_nums_component(constants.EMPTY_CELL)))
-    gui.cli_print([boards[num].name + ":", texts.TEXT_ADD_RANDOM_LB])
-
-def drop_cell(boards, num, gui):
-    board = boards[num]
-    num_cell = random.randint(1, constants.SIZE_BOARD**2)
-    board.del_component(num_cell)
-    gui.cli_print([boards[num].name + ":", texts.TEXT_DROP_CELL % num_cell])
-
-def bankrupt(boards, num, gui):
-    constants.BANKRUPT = True
-    constants.BANKRUPT_NAME = boards[num].name
-    gui.cli_print([boards[num].name + ":", texts.TEXT_BANKRUPT])
+    def apply(self, boards, num):
+        board = boards[num]
+        num_rand_comp = random.choice(board.all_nums_component(constants.API))
+        board.del_component(num_rand_comp)
+        return num_rand_comp
 
 
-def admin_error(boards, num, gui):
-    b = boards[num]
-    new_b = [constants.EMPTY_CELL] * (constants.SIZE_BOARD**2)
-    l_step = 0
-    for ost in range(constants.SIZE_BOARD-1, 0-1, -1):
-        for old_b_num in range(ost, constants.SIZE_BOARD**2, 4):
-            new_b[l_step] = b.board[old_b_num]
-            l_step += 1
-    boards[num].board = new_b
-    gui.cli_print([boards[num].name + ":", texts.TEXT_ADMIN_ERROR])
+class AddRandomAPIEvent(BaseEvent):
+    component = constants.API
+    component_name = 'API'
+    long_text = ['''\
+Произошло ужасное - соседнее подразделение разогнали.
+Целый спринт вы ждали худшего и ходили по собеседованиям.
+...
+...
+В итоге выяснилось, что коллег перевели на другое направление, а вам достался
+один из их компонентов :)''',
+                 '''\
+Вас долго мучали инвентаризацией в кластере k8s, и по итогам вы нашли
+никем не используемый под, потреблявший целую ноду. Опа, бесплатное железо!''',
+                 '''\
+В ЗИПе нашли лишнее железо, праздник на вашей улице!''']
+
+    def __init__(self):
+        super().__init__()
+        self.short_text = 'Получаете '+self.component_name+' в ячейку %i'
+
+    def apply(self, boards, num):
+        board = boards[num]
+        field = random.choice(board.all_nums_component(constants.EMPTY_CELL))
+        board.change_component(self.component, field)
+        return field
 
 
-def add_1k(boards, num, gui):
-    board = boards[num]
-    b_cap = board.cap(board.quantity_component(constants.API), board.quantity_component(constants.DB), board.quantity_component(constants.LB))
-    if b_cap < board.users+1:
-        board.change_users(-1)
-    else:
-        board.change_users(1)
-    gui.cli_print([boards[num].name + ":", texts.TEXT_ADD_1K])
-
-def add_2k(boards, num, gui):
-    board = boards[num]
-    b_cap = board.cap(board.quantity_component(constants.API), board.quantity_component(constants.DB), board.quantity_component(constants.LB))
-    if b_cap < board.users+1:
-        board.change_users(-1)
-    else:
-        board.change_users(2)
-    gui.cli_print([boards[num].name + ":", texts.TEXT_ADD_2K])
+class AddRandomDBEvent(AddRandomAPIEvent):
+    component = constants.DB
+    component_name = 'DB'
 
 
-def add_3k(boards, num, gui):
-    board = boards[num]
-    b_cap = board.cap(board.quantity_component(constants.API), board.quantity_component(constants.DB), board.quantity_component(constants.LB))
-    if b_cap < board.users+1:
-        board.change_users(-1)
-    else:
-        board.change_users(3)
-    gui.cli_print([boards[num].name + ":", texts.TEXT_ADD_3K])
+class AddRandomLBEvent(AddRandomAPIEvent):
+    component = constants.LB
+    component_name = 'LB'
 
 
-def drop_component(boards, num, gui):
-    nums_comps = (boards[num].all_nums_component(constants.API) +
-                  boards[num].all_nums_component(constants.DB) +
-                  boards[num].all_nums_component(constants.LB) +
-                  boards[num].all_nums_component(constants.BCKP))
-    num_comp = random.choice(nums_comps)
-    boards[num].del_component(num_comp)
-    gui.cli_print([boards[num].name + ":", texts.TEXT_DROP_COMPONENT % num_comp])
+class DropCellEvent(BaseEvent):
+    short_text = 'Потеряна ячейка №%i'
+    long_text = ['''\
+ECC Memory Correctable Errors detected.
+...
+При замене планки ОЗУ браслет заземления случайно отстегнулся,
+2U сервер был заочно приговорен к электрической казни.''',
+                 '''\
+Ваш сервер случайно уронили. Где в этот момент была стойка - умалчивается.''']
 
-def left_right_1k(boards, num, gui):
-    boards[num].change_users(-2)
-    if num == len(boards) - 1:
-        boards[0].change_users(1)
-        boards[num-1].change_users(1)
-    elif num == 0:
-        boards[len(boards)-1].change_users(1)
-        boards[num + 1].change_users(1)
-    else:
-        boards[num - 1].change_users(1)
-        boards[num + 1].change_users(1)
-    gui.cli_print([boards[num].name + ":", texts.TEXT_LEFT_RIGHT_1K])
+    def apply(self, boards, num):
+        board = boards[num]
+        num_cell = random.randint(1, constants.SIZE_BOARD**2)
+        board.del_component(num_cell)
+        return num_cell
 
 
-def drop_rack(boards, num, gui):
-    # фактически генерим номер стойки
-    n = random.randint(1,4)
-    for i in range(n, constants.SIZE_BOARD**2+1, 4):
-        boards[num].del_component(i)
-    gui.cli_print([boards[num].name + ":", texts.TEXT_DROP_RACK, "№" + str(n)])
+class BankruptEvent(BaseEvent):
+    short_text = 'Минус 1 очко на следующий ход.'
+    long_text = ['''\
+        Бюджет вашего стартапа резко кончился, а инвесторов всё ещё не нашли,
+требуется ужаться.''',
+                 '''\
+В середине года бюджет на год был успешно освоен, ждите новостей.''']
+
+    def apply(self, boards, num):
+        # TODO(g.melikov): this should not be a global variable
+        constants.BANKRUPT = True
+        constants.BANKRUPT_NAME = boards[num].name
+        return True
 
 
-def right_component(boards, num, gui):
-    nums_comps = (boards[num].all_nums_component(constants.API) +
-                  boards[num].all_nums_component(constants.DB) +
-                  boards[num].all_nums_component(constants.LB) +
-                  boards[num].all_nums_component(constants.BCKP))
-    num_comp = random.choice(nums_comps)
-    comp = boards[num].board[num_comp-1]
-    boards[num].del_component(num_comp)
-    if num == len(boards)-1: num_new_board = 0
-    else: num_new_board = num + 1
-    num_new_comp = random.choice(boards[num_new_board].all_nums_component(constants.EMPTY_CELL))
-    boards[num_new_board].change_component(comp, num_new_comp)
-    gui.cli_print([boards[num].name + ":", texts.TEXT_RIGHT_COMPONENT % num_new_comp])
+class AdminErrorEvent(BaseEvent):
+    short_text = 'Коммутация вашех ячеек повернулась на 90°'
+    long_text = ['''\
+Ваши админы решили сэкономить на ЦОДе и прямо сейчас перевозят на тележке
+последний сервер.
+А теперь коммутируют его.
+...
+Ого, теперь БД из другой стойки отвечает быстрее на 1мс!
+Ого, теперь она не в той стойке...
+...
+Зато остальные компоненты стали отвечать дольше на 1мс
+...
+Ноухау, горизонтальные стойки!''',
+                 '''\
+При переезде в другой ЦОД инженеры на объекте всё перепутали и разбросали
+оборудование из одной стойки в разные.
+...
+Теперь говорят, что так лучше для охлаждения.''']
+
+    def apply(self, boards, num):
+        b = boards[num]
+        new_b = [constants.EMPTY_CELL] * (constants.SIZE_BOARD**2)
+        l_step = 0
+        for ost in range(constants.SIZE_BOARD-1, 0-1, -1):
+            for old_b_num in range(ost, constants.SIZE_BOARD**2, 4):
+                new_b[l_step] = b.board[old_b_num]
+                l_step += 1
+        boards[num].board = new_b
+        return True
+
+
+class BonusEvent(BaseEvent):
+    amount = 1
+    penalty = 1
+    short_text = "Пришло %iк, если не тянешь — потеря %iк"
+
+    def apply(self, boards, num):
+        # TODO: fix texts
+        board = boards[num]
+        b_cap = board.cap(board.quantity_component(constants.API),
+                          board.quantity_component(constants.DB),
+                          board.quantity_component(constants.LB))
+        if b_cap < board.users+self.amount:
+            board.change_users(-self.penalty)
+        else:
+            board.change_users(self.amount)
+        return self.amount, self.amount
+
+
+class Bonus2Event(BonusEvent):
+    amount = 2
+    penalty = 1
+
+
+class Bonus3Event(BonusEvent):
+    amount = 3
+    penalty = 1
+    cards_count = 2
+
+
+class DropComponentEvent(BaseEvent):
+    short_text = "Компонент #%i потерян."
+
+    def apply(self, boards, num):
+        nums_comps = (boards[num].all_nums_component(constants.API) +
+                      boards[num].all_nums_component(constants.DB) +
+                      boards[num].all_nums_component(constants.LB) +
+                      boards[num].all_nums_component(constants.BCKP))
+        num_comp = random.choice(nums_comps)
+        boards[num].del_component(num_comp)
+        return num_comp
+
+
+class MoveComplonentToCompetitorEvent(BaseEvent):
+    short_text = "По 1к пользователей ушли к конкуренту справа и слева"
+
+    def apply(self, boards, num):
+        boards[num].change_users(-2)
+        if num == len(boards) - 1:
+            boards[0].change_users(1)
+            boards[num-1].change_users(1)
+        elif num == 0:
+            boards[len(boards)-1].change_users(1)
+            boards[num + 1].change_users(1)
+        else:
+            boards[num - 1].change_users(1)
+            boards[num + 1].change_users(1)
+        return True
+
+
+class DropRackEvent(BaseEvent):
+    cards_count = 2
+    short_text = "Вылетела стойка #%i"
+    long_text = ['''\
+Наступила летняя жара, а зимой лишний кондиционер был не нужен и его продали.
+Стойка, рядом с которой раньше стоял кондей, сгорела :(''',
+                 '''\
+Во время тестирования ИБП электрики что-то перепутали, и на одну из ваших
+стоек пришла третья фаза вместо земли.
+...
+Помянем.''']
+
+    def apply(self, boards, num):
+        # фактически генерим номер стойки
+        n = random.randint(1, 4)
+        for i in range(n, constants.SIZE_BOARD**2+1, 4):
+            boards[num].del_component(i)
+        return n
+
+
+class ComponentToRightCompetitorEvent(BaseEvent):
+    short_text = "Компонент #%i ушел конкуренту справа."
+
+    def apply(self, boards, num):
+        nums_comps = (boards[num].all_nums_component(constants.API) +
+                      boards[num].all_nums_component(constants.DB) +
+                      boards[num].all_nums_component(constants.LB) +
+                      boards[num].all_nums_component(constants.BCKP))
+        num_comp = random.choice(nums_comps)
+        comp = boards[num].board[num_comp-1]
+        boards[num].del_component(num_comp)
+        if num == len(boards)-1:
+            num_new_board = 0
+        else:
+            num_new_board = num + 1
+        num_new_comp = random.choice(
+            boards[num_new_board].all_nums_component(constants.EMPTY_CELL))
+        boards[num_new_board].change_component(comp, num_new_comp)
+        return num_new_comp
+
+
+clsmembers = inspect.getmembers(sys.modules[__name__], inspect.isclass)
+game_events = [event[1] for event in clsmembers if issubclass(event[1],
+               BaseEvent) and event[1] is not BaseEvent]
 
 
 class Events:
@@ -142,23 +285,9 @@ class Events:
         self.refill_events()
 
     def refill_events(self):
-        self.events = (
-        [dba] * constants.CHANCE_DBA +
-        [del_api] * constants.CHANCE_DEL_API +
-        [add_random_api] * constants.CHANCE_ADD_RANDOM_API +
-        [add_random_db] * constants.CHANCE_ADD_RANDOM_DB +
-        [add_random_lb] * constants.CHANCE_ADD_RANDOM_LB +
-        [drop_cell] * constants.CHANCE_DROP_CELL +
-        [bankrupt] * constants.CHANCE_BANKRUPT +
-        [admin_error] * constants.CHANCE_ADMIN_ERROR +
-        [add_1k] * constants.CHANCE_ADD_1K +
-        [add_2k] * constants.CHANCE_ADD_2K +
-        [add_3k] * constants.CHANCE_ADD_3K +
-        [drop_component] * constants.CHANCE_DROP_COMPONENT +
-        [left_right_1k] * constants.CHANCE_LEFT_RIGHT_1K +
-        [drop_rack] * constants.CHANCE_DROP_RACK +
-        [right_component] * constants.CHANCE_RIGHT_COMPONENT
-        )
+        self.events = []
+        for event in game_events:
+            self.events.extend([event] * event.cards_count)
         random.shuffle(self.events)
         return self.events
 
@@ -168,4 +297,4 @@ class Events:
         except IndexError:
             self.events = self.refill_events()
             random_ev = self.events.pop()
-        random_ev(boards, num, gui)
+        random_ev().act(boards, num, gui)
