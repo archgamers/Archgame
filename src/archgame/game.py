@@ -28,6 +28,7 @@ def main(): #- общий план того что делает программ
         #разыграть рандомные события
         for num in range(len(boards)):
             ev.random_event(boards, num, gui)
+            boards[num].class_benefit()
 
         #Проверка после эвента: тянет ли своих пользователей после действий ВСЕХ теперь его конструкция
         for num in range(len(boards)):

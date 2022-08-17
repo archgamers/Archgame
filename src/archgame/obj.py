@@ -9,6 +9,22 @@ class Player:
         self.users = 1
         self.board = [constants.EMPTY_CELL] * (constants.SIZE_BOARD**2)
         self.class_per = class_p
+        # Компоненты
+        if self.class_per in ["Р", "P"]:
+            self.lim_a = constants.LIM_A_P
+        else:
+            self.lim_a = constants.LIM_A  # API может выдержать до 3к нагрузки
+        self.lim_d = constants.LIM_D  # DB может поддерживать до 3х API
+        self.lim_l = constants.LIM_L  # LB может обслуживать не больше 3х API
+        self.lim_b = constants.LIM_B  # В случае потери DB при возврате ее назад бэкап позволяет вернуть часть пользовательской базы, но не более стольких к.
+
+    def class_benefit(self):
+        if self.class_per in ["А", "A"]:
+            pass
+        if self.class_per in ["М", "M"]:
+            self.users += 1
+        if self.class_per in ["Р", "P"]:
+            pass
 
     #На начло игры на всех полях стандартное расположение 1 A, 6 D, 11 B; u 1
     def default(self):
@@ -47,4 +63,4 @@ class Player:
             return False
 
     def cap(self, q_A, q_D, q_L):
-        return constants.LIM_A * min( (q_D * constants.LIM_D) , min( max(1, q_L * constants.LIM_L) , q_A) )
+        return self.lim_a * min( (q_D * self.lim_d) , min( max(1, q_L * self.lim_l) , q_A) )
