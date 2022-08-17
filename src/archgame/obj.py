@@ -3,11 +3,12 @@ from archgame import constants
 
 #Номер, который передается в функцию - это номер ячейки на поле! НЕ в массиве
 # и возвращается отсюда тоже он!.
-class Board:
-    def __init__(self, name):
+class Player:
+    def __init__(self, name, class_p):
         self.name = name
         self.users = 1
         self.board = [constants.EMPTY_CELL] * (constants.SIZE_BOARD**2)
+        self.class_per = class_p
 
     #На начло игры на всех полях стандартное расположение 1 A, 6 D, 11 B; u 1
     def default(self):

@@ -24,7 +24,7 @@ class Cli:
     def print_board(self, boards):
         lines = [""] * 7
         for b in boards:
-            lines[0] += b.name + " " * (11-len(b.name))
+            lines[0] += b.name + " " + b.class_per + " " * (11-len(b.name) - 1 - len(b.class_per))
             s = []
             for i in range(len(b.board) + 1):
                 if (i > 0) and (i % constants.SIZE_BOARD == 0):
@@ -40,10 +40,11 @@ class Cli:
 
     def intro(self):
         q_hero = int(input(texts.ASK_QUANTITY))
+        print(texts.ASK_CLASSES)
         boards = [0] * q_hero
         for i in range(1, q_hero+1, 1):
-            name = input(texts.ASK_NAME % i).strip()
-            boards[i-1] = obj.Board(name)
+            name, cl = input(texts.ASK_NAME % i).strip().split(",")
+            boards[i-1] = obj.Player(name.strip(), cl.strip())
             boards[i-1].default()
         return boards
 
