@@ -27,8 +27,8 @@ class BaseEvent(object):
         raise NotImplementedError()
 
     def act(self, boards, num, gui):
-        response = [boards[num].name + ":", self.random_long_text]
         result = self.apply(boards, num)
+        response = [boards[num].name + ":", self.random_long_text]
         if result is None:
             response.append(self.immunity_text)
         else:
@@ -52,13 +52,19 @@ class DbaEvent(BaseEvent):
 
     def apply(self, boards, num):
         board = boards[num]
-        if board.is_a_component(constants.BCKP):
-            board.del_component(
-                random.choice(board.all_nums_component(constants.BCKP)))
-            return None
+        if board.is_admin:
+            self.long_text = '''Ваш аутсорсер-DBA почти удалил таблицу, но вы вовремя дали ему по шапке и успешно сделали всё сами.'''
+            self.short_text = '''Данные спасены.'''
+            self.immunity_text = ''
+            pass
         else:
-            board.users = 0
-            return True
+            if board.is_a_component(constants.BCKP):
+                board.del_component(
+                    random.choice(board.all_nums_component(constants.BCKP)))
+                return None
+            else:
+                board.users = 0
+                return True
 
 
 class DelApiEvent(BaseEvent):
@@ -112,6 +118,7 @@ class AddRandomLBEvent(AddRandomAPIEvent):
 
 
 class DropCellEvent(BaseEvent):
+    if constants.TEST: cards_count = 1 + 100
     short_text = 'Потеряна ячейка №%i'
     long_text = ['''\
 ECC Memory Correctable Errors detected.
@@ -124,22 +131,25 @@ ECC Memory Correctable Errors detected.
     def apply(self, boards, num):
         board = boards[num]
         num_cell = random.randint(1, constants.SIZE_BOARD**2)
-        board.del_component(num_cell)
+        if board.is_admin and board.board[num_cell-1] == constants.DB:
+            self.long_text = 'Ваш сервер случайно уронили. Но вы админ, моё почтение, снимаю шляпу!'
+            self.short_text = 'Восстановлена ячейка №%i'
+        else:
+            board.del_component(num_cell)
         return num_cell
 
 
 class BankruptEvent(BaseEvent):
+    if constants.TEST: cards_count = 1 + 500
     short_text = 'Минус 1 очко на следующий ход.'
     long_text = ['''\
-        Бюджет вашего стартапа резко кончился, а инвесторов всё ещё не нашли,
+Бюджет вашего стартапа резко кончился, а инвесторов всё ещё не нашли,
 требуется ужаться.''',
                  '''\
 В середине года бюджет на год был успешно освоен, ждите новостей.''']
 
     def apply(self, boards, num):
-        # TODO(g.melikov): this should not be a global variable
-        constants.BANKRUPT = True
-        constants.BANKRUPT_NAME = boards[num].name
+        boards[num].bankrupt_points()
         return True
 
 
@@ -189,7 +199,7 @@ class BonusEvent(BaseEvent):
             board.change_users(-self.penalty)
         else:
             board.change_users(self.amount)
-        return self.amount, self.amount
+        return self.amount, self.penalty
 
 
 class Bonus2Event(BonusEvent):
@@ -204,6 +214,7 @@ class Bonus3Event(BonusEvent):
 
 
 class DropComponentEvent(BaseEvent):
+    if constants.TEST:  cards_count = 1 + 200
     short_text = "Компонент #%i потерян."
 
     def apply(self, boards, num):
@@ -212,7 +223,9 @@ class DropComponentEvent(BaseEvent):
                       boards[num].all_nums_component(constants.LB) +
                       boards[num].all_nums_component(constants.BCKP))
         num_comp = random.choice(nums_comps)
-        boards[num].del_component(num_comp)
+        if boards[num].is_admin and boards[num].board[num_comp-1] == constants.DB:
+            self.short_text = "Благодаря тому, что вы админ, компонент #%i не был потерян."
+        else: boards[num].del_component(num_comp)
         return num_comp
 
 
@@ -234,7 +247,7 @@ class MoveComplonentToCompetitorEvent(BaseEvent):
 
 
 class DropRackEvent(BaseEvent):
-    cards_count = 2
+    if constants.TEST:  cards_count = 2 + 100
     short_text = "Вылетела стойка #%i"
     long_text = ['''\
 Наступила летняя жара, а зимой лишний кондиционер был не нужен и его продали.
@@ -248,8 +261,12 @@ class DropRackEvent(BaseEvent):
     def apply(self, boards, num):
         # фактически генерим номер стойки
         n = random.randint(1, 4)
-        for i in range(n, constants.SIZE_BOARD**2+1, 4):
-            boards[num].del_component(i)
+        if boards[num].is_admin:
+            self.long_text = 'Одна из ваших стоек начала барахлить, но вы, админ, очень грозно на неё посмотрели, и она заработала.'
+            self.short_text = 'Вы не дали упасть стойке #%i'
+        else:
+            for i in range(n, constants.SIZE_BOARD**2+1, 4):
+                boards[num].del_component(i)
         return n
 
 
@@ -263,15 +280,18 @@ class ComponentToRightCompetitorEvent(BaseEvent):
                       boards[num].all_nums_component(constants.BCKP))
         num_comp = random.choice(nums_comps)
         comp = boards[num].board[num_comp-1]
-        boards[num].del_component(num_comp)
-        if num == len(boards)-1:
-            num_new_board = 0
+        if boards[num].is_admin and comp == constants.DB:
+            self.short_text = "Компонент #%i не ушел конкуренту справа, потому что вы его величество админ и ваши базы данных разбазариванию не подлежат ни при каких условиях."
         else:
-            num_new_board = num + 1
-        num_new_comp = random.choice(
-            boards[num_new_board].all_nums_component(constants.EMPTY_CELL))
-        boards[num_new_board].change_component(comp, num_new_comp)
-        return num_new_comp
+            boards[num].del_component(num_comp)
+            if num == len(boards)-1:
+                num_new_board = 0
+            else:
+                num_new_board = num + 1
+            num_new_comp = random.choice(
+                boards[num_new_board].all_nums_component(constants.EMPTY_CELL))
+            boards[num_new_board].change_component(comp, num_new_comp)
+        return num_comp
 
 
 clsmembers = inspect.getmembers(sys.modules[__name__], inspect.isclass)

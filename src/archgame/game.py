@@ -6,19 +6,17 @@ def main(): #- общий план того что делает программ
     gui = cli.Cli()
     ev = events.Events()
     boards = gui.intro()
-    gui.first_sprint()
     winner = None
-    num_sprint = 2
-    while winner == None:
-        gui.begin(boards, num_sprint)
+    num_sprint = 1
+    while winner is None:
+        gui.begin(num_sprint)
         gui.print_board(boards)
 
         for b in boards:
-            if constants.BANKRUPT and constants.BANKRUPT_NAME == b.name:
-                add_u, add_c = gui.ask(b, default=(constants.BANKRUPT_POINTS))
-                constants.BANKRUPT = False
-            else:
-                add_u, add_c = gui.ask(b)
+            add_u, add_c = gui.ask(b)
+            # Возвращаем всем дефолтные очки на ход
+            # Так как BankruptEvent устанавливает лимит на следующий спринт, это нужно делать здесь.
+            b.default_points()
             for i in add_c:
                 component, num = i
                 b.change_component(component, num)
@@ -27,9 +25,13 @@ def main(): #- общий план того что делает программ
 
         #разыграть рандомные события
         for num in range(len(boards)):
-            ev.random_event(boards, num, gui)
+            try:
+                ev.random_event(boards, num, gui)
+            except Exception:
+                print("Событие сломалось, для этого игрока ничего не происходит, играем дальше.")
             boards[num].class_benefit()
 
+        #Наводим порядок
         #Проверка после эвента: тянет ли своих пользователей после действий ВСЕХ теперь его конструкция
         for num in range(len(boards)):
             boards[num].users = min(boards[num].users, boards[num].cap(boards[num].quantity_component(constants.API), boards[num].quantity_component(constants.DB), boards[num].quantity_component(constants.LB)))
@@ -37,12 +39,13 @@ def main(): #- общий план того что делает программ
         #Условие победы пока не определено, поставила первое попавшееся
         if num_sprint == constants.WIN_SCORE:
             max_users = -1
+            winner = []
             for n in boards:
-                if n.users > max_users:
+                if n.users >= max_users:
                     max_users = n.users
-                    winner = n.name
+                    winner.append(n.name)
             gui.print_board(boards)
-            gui.final(winner)
+            gui.final(", ".join(winner))
 
         num_sprint += 1
 

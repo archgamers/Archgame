@@ -6,11 +6,12 @@ from archgame import constants
 class Player:
     def __init__(self, name, class_p):
         self.name = name
-        self.users = 1
+        self.users = 0
         self.board = [constants.EMPTY_CELL] * (constants.SIZE_BOARD**2)
         self.class_per = class_p
+
         # Компоненты
-        if self.class_per in ["Р", "P"]:
+        if self.is_proger:
             self.lim_a = constants.LIM_A_P
         else:
             self.lim_a = constants.LIM_A  # API может выдержать до 3к нагрузки
@@ -18,14 +19,33 @@ class Player:
         self.lim_l = constants.LIM_L  # LB может обслуживать не больше 3х API
         self.lim_b = constants.LIM_B  # В случае потери DB при возврате ее назад бэкап позволяет вернуть часть пользовательской базы, но не более стольких к.
 
-    def class_benefit(self):
-        if self.class_per in ["А", "A"]:
-            pass
-        if self.class_per in ["М", "M"]:
-            self.users += 1
-        if self.class_per in ["Р", "P"]:
-            pass
+        self.q_point = constants.FIRST_SPRINT_POINTS
 
+    def default_points(self):
+        self.q_point = constants.LIM_POINTS
+
+    def bankrupt_points(self):
+        self.q_point = constants.BANKRUPT_POINTS
+
+    @property
+    def is_admin(self):
+        if self.class_per in ["А", "A", "a", "а"]:
+            return True
+        return False
+
+    @property
+    def is_manager(self):
+        if self.class_per in ["М", "M", "m", "м"]:
+            return True
+        return False
+
+    @property
+    def is_proger(self):
+        if self.class_per in ["Р", "P", "p", "р"]:
+            return True
+        return False
+
+    #НУЖЕН ДЛЯ ГЕНЕРАТОРА!
     #На начло игры на всех полях стандартное расположение 1 A, 6 D, 11 B; u 1
     def default(self):
         self.board[1-1] = constants.API
@@ -33,8 +53,17 @@ class Player:
         self.board[11 - 1] = constants.BCKP
         self.users = 1
 
+    def class_benefit(self):
+        if self.is_admin:
+            pass
+        if self.is_manager:
+            self.users += 1
+        if self.is_proger:
+            pass
+
     def change_users(self, number):
         self.users += number
+        if self.users < 0: self.users = 0
 
     def change_component(self, comp, num):
         self.board[num-1] = comp

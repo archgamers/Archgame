@@ -20,6 +20,9 @@ class Cli:
         pass
 
     def cli_print(self, texts):
+        if constants.TEST:
+            input(texts)
+            return()
         for line in texts:
             print('')
             for char in line:
@@ -27,13 +30,6 @@ class Cli:
                 sys.stdout.flush()
                 time.sleep(input_speed.get(char, 0.03))
         input('')
-
-    #НЕДОДЕЛКИ
-    #Надо написать первый спринт, пока без него
-    def first_sprint(self):
-        # Выводить или не выводить легенду и когда вообще выводить - пока непонятно
-        print(texts.LEGEND)
-        pass
 
 
     #вывод поля
@@ -61,28 +57,20 @@ class Cli:
         for i in range(1, q_hero+1, 1):
             name, cl = input(texts.ASK_NAME % i).strip().split(",")
             boards[i-1] = obj.Player(name.strip(), cl.strip())
-            boards[i-1].default()
+        print(texts.LEGEND)
         return boards
 
-    def begin(self, boards, num_sprint):
+    def begin(self, num_sprint):
         print('\n\n\n')
         print(texts.SPRINTS % num_sprint)
-        print(texts.DESC)
+        if num_sprint == 1:
+            print(texts.DESC % constants.FIRST_SPRINT_POINTS)
+        else:
+            print(texts.DESC % constants.LIM_POINTS)
 
-    # #вернет массив вида 1) скольк надо добавить u  2) [[компонент, номер ячейки], [...]...]
-    # def ask(self, b):
-    #     inpt_str = input(texts.INPUT_ACTION % b.name).strip().split(",")
-    #     ans = [0, []]
-    #     for i in inpt_str:
-    #         if i[0] == "1": #добавить юзеров
-    #             ans[0] += 1
-    #         if i[0] == "2": # добавить компонент
-    #             two, comp, number = i.strip().split("-")
-    #             ans[1].append([comp, int(number)])
-    #     return(ans)
     @staticmethod
-    def validate_input_user(choices, lim_points):
-        if len(choices) > lim_points:
+    def validate_input_user(choices, b):
+        if len(choices) != b.q_point:
             raise InvalidUserInput
         for choice in choices:
             if '-' in choice:
@@ -101,12 +89,13 @@ class Cli:
             elif choice != '1':
                 raise InvalidUserInput
 
-    def ask(self, b, default=constants.LIM_POINTS):
+    # вернет массив вида 1) скольк надо добавить u  2) [[компонент, номер ячейки], [...]...]
+    def ask(self, b):
         while True:
             try:
                 inpt_str = input(texts.INPUT_ACTION % b.name).strip()
                 choices = inpt_str.split(',')
-                self.validate_input_user(choices, default)
+                self.validate_input_user(choices, b)
                 ans = [0, []]
                 for i in choices:
                     if i[0] == "1":  # добавить юзеров
@@ -116,7 +105,7 @@ class Cli:
                         ans[1].append([comp, int(number)])
                 return ans
             except InvalidUserInput:
-                print('Некорректный ввод, пожалуйста, попробуйте снова,\nПомните, что на ход вам даётся %d очка' % default)
+                print('Некорректный ввод, пожалуйста, попробуйте снова,\nПомните, что на ход вам даётся %d очка' % b.q_point)
 
 
 
