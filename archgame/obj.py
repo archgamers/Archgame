@@ -1,8 +1,9 @@
-from archgame import texts
 from archgame import constants
 
-#Номер, который передается в функцию - это номер ячейки на поле! НЕ в массиве
+# Номер, который передается в функцию - это номер ячейки на поле! НЕ в массиве
 # и возвращается отсюда тоже он!.
+
+
 class Player:
     def __init__(self, name, class_p):
         self.name = name
@@ -17,7 +18,9 @@ class Player:
             self.lim_a = constants.LIM_A  # API может выдержать до 3к нагрузки
         self.lim_d = constants.LIM_D  # DB может поддерживать до 3х API
         self.lim_l = constants.LIM_L  # LB может обслуживать не больше 3х API
-        self.lim_b = constants.LIM_B  # В случае потери DB при возврате ее назад бэкап позволяет вернуть часть пользовательской базы, но не более стольких к.
+        # В случае потери DB при возврате ее назад бэкап позволяет вернуть
+        # часть пользовательской базы, но не более стольких к.
+        self.lim_b = constants.LIM_B
 
         self.q_point = constants.FIRST_SPRINT_POINTS
 
@@ -45,10 +48,10 @@ class Player:
             return True
         return False
 
-    #НУЖЕН ДЛЯ ГЕНЕРАТОРА!
-    #На начло игры на всех полях стандартное расположение 1 A, 6 D, 11 B; u 1
+    # НУЖЕН ДЛЯ ГЕНЕРАТОРА!
+    # На начло игры на всех полях стандартное расположение 1 A, 6 D, 11 B; u 1
     def default(self):
-        self.board[1-1] = constants.API
+        self.board[1 - 1] = constants.API
         self.board[6 - 1] = constants.DB
         self.board[11 - 1] = constants.BCKP
         self.users = 1
@@ -63,10 +66,11 @@ class Player:
 
     def change_users(self, number):
         self.users += number
-        if self.users < 0: self.users = 0
+        if self.users < 0:
+            self.users = 0
 
     def change_component(self, comp, num):
-        self.board[num-1] = comp
+        self.board[num - 1] = comp
 
     def del_component(self, num):
         self.board[num - 1] = constants.EMPTY_CELL
@@ -81,15 +85,17 @@ class Player:
     def all_nums_component(self, comp):
         nums = []
         for i in range(len(self.board)):
-            if self.board[i] == comp: nums.append(i+1)
-        return(nums)
+            if self.board[i] == comp:
+                nums.append(i + 1)
+        return nums
 
     # если путо - True, если нет - False
-    def is_cell_empty(self,num):
-        if self.board[num-1] == constants.EMPTY_CELL:
+    def is_cell_empty(self, num):
+        if self.board[num - 1] == constants.EMPTY_CELL:
             return True
         else:
             return False
 
     def cap(self, q_A, q_D, q_L):
-        return self.lim_a * min( (q_D * self.lim_d) , min( max(1, q_L * self.lim_l) , q_A) )
+        return self.lim_a * min((q_D * self.lim_d),
+                                min(max(1, q_L * self.lim_l), q_A))

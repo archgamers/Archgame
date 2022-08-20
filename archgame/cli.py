@@ -22,7 +22,7 @@ class Cli:
     def cli_print(self, texts):
         if constants.TEST:
             input(texts)
-            return()
+            return
         for line in texts:
             print('')
             for char in line:
@@ -31,32 +31,43 @@ class Cli:
                 time.sleep(input_speed.get(char, 0.03))
         input('')
 
+    # вывод поля
 
-    #вывод поля
     def print_board(self, boards):
         lines = [""] * 7
         for b in boards:
-            lines[0] += b.name + " " + b.class_per + " " * (11-len(b.name) - 1 - len(b.class_per))
+            lines[0] += b.name + " " + b.class_per + " " * \
+                (11 - len(b.name) - 1 - len(b.class_per))
             s = []
             for i in range(len(b.board) + 1):
                 if (i > 0) and (i % constants.SIZE_BOARD == 0):
-                    lines[i//constants.SIZE_BOARD] += ("|" + "|".join(s) + "|  ")
+                    lines[i //
+                          constants.SIZE_BOARD] += ("|" +
+                                                    "|".join(s) +
+                                                    "|  ")
                     s = []
-                    if i == len(b.board): break
+                    if i == len(b.board):
+                        break
                 s += [b.board[i]]
             line_u = "Users:" + str(b.users)
-            lines[5] += line_u + " " * (11-len(line_u))
-            line_c = "Cap:" + str(b.cap(b.quantity_component(constants.API), b.quantity_component(constants.DB), b.quantity_component(constants.LB)))
-            lines[6] += line_c + " " * (11-len(line_c))
-        for l in lines: print(l)
+            lines[5] += line_u + " " * (11 - len(line_u))
+            line_c = "Cap:" + str(
+                b.cap(
+                    b.quantity_component(
+                        constants.API), b.quantity_component(
+                        constants.DB), b.quantity_component(
+                        constants.LB)))
+            lines[6] += line_c + " " * (11 - len(line_c))
+        for line in lines:
+            print(line)
 
     def intro(self):
         q_hero = int(input(texts.ASK_QUANTITY))
         print(texts.ASK_CLASSES)
         boards = [0] * q_hero
-        for i in range(1, q_hero+1, 1):
+        for i in range(1, q_hero + 1, 1):
             name, cl = input(texts.ASK_NAME % i).strip().split(",")
-            boards[i-1] = obj.Player(name.strip(), cl.strip())
+            boards[i - 1] = obj.Player(name.strip(), cl.strip())
         print(texts.LEGEND)
         return boards
 
@@ -78,7 +89,7 @@ class Cli:
                 if len(input_list) != 3:
                     raise InvalidUserInput
                 _, component, num_cell = choice.split('-')
-                if num_cell.isdigit() == False:
+                if not num_cell.isdigit():
                     raise InvalidUserInput
                 num_cell = int(num_cell)
                 if component not in constants.POSSIBLE_INPUTS:
@@ -89,7 +100,8 @@ class Cli:
             elif choice != '1':
                 raise InvalidUserInput
 
-    # вернет массив вида 1) скольк надо добавить u  2) [[компонент, номер ячейки], [...]...]
+    # вернет массив вида 1) скольк надо добавить u  2) [[компонент, номер
+    # ячейки], [...]...]
     def ask(self, b):
         while True:
             try:
@@ -105,9 +117,10 @@ class Cli:
                         ans[1].append([comp, int(number)])
                 return ans
             except InvalidUserInput:
-                print('Некорректный ввод, пожалуйста, попробуйте снова,\nПомните, что на ход вам даётся %d очка' % b.q_point)
-
-
+                print(
+                    'Некорректный ввод, пожалуйста, попробуйте снова,\n'
+                    'Помните, что на ход вам даётся %d очка' %
+                    b.q_point)
 
     def final(self, winner):
         print(texts.ENDING % winner)
