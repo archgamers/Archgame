@@ -5,8 +5,9 @@ import inspect
 import sys
 
 
-#Во все события передавать всё одинаково!
-#Когда буду делать отображение надписей для событий - передавать во все объект Cli ещё!!!
+# Во все события передавать всё одинаково!
+# Когда буду делать отображение надписей для событий - передавать во все
+# объект Cli ещё!!!
 
 
 class BaseEvent(object):
@@ -17,7 +18,7 @@ class BaseEvent(object):
 
     @property
     def random_long_text(self):
-        if type(self.long_text) == list:
+        if isinstance(self.long_text, list):
             return random.choice(self.long_text)
         return self.long_text
 
@@ -53,7 +54,9 @@ class DbaEvent(BaseEvent):
     def apply(self, boards, num):
         board = boards[num]
         if board.is_admin:
-            self.long_text = '''Ваш аутсорсер-DBA почти удалил таблицу, но вы вовремя дали ему по шапке и успешно сделали всё сами.'''
+            self.long_text = '''\
+Ваш аутсорсер-DBA почти удалил таблицу, но вы вовремя дали ему по шапке и
+успешно сделали всё сами.'''
             self.short_text = '''Данные спасены.'''
             self.immunity_text = ''
             pass
@@ -104,7 +107,7 @@ class AddRandomAPIEvent(BaseEvent):
 
     def __init__(self):
         super().__init__()
-        self.short_text = 'Получаете '+self.component_name+' в ячейку %i'
+        self.short_text = 'Получаете ' + self.component_name + ' в ячейку %i'
 
     def apply(self, boards, num):
         board = boards[num]
@@ -124,7 +127,8 @@ class AddRandomLBEvent(AddRandomAPIEvent):
 
 
 class DropCellEvent(BaseEvent):
-    if constants.TEST: cards_count = 1 + 100
+    if constants.TEST:
+        cards_count = 1 + 100
     short_text = 'Потеряна ячейка №%i'
     long_text = ['''\
 ECC Memory Correctable Errors detected.
@@ -143,8 +147,9 @@ yyy: Я предупреждал... Ты почту когда последни�
     def apply(self, boards, num):
         board = boards[num]
         num_cell = random.randint(1, constants.SIZE_BOARD**2)
-        if board.is_admin and board.board[num_cell-1] == constants.DB:
-            self.long_text = 'Ваш сервер случайно уронили. Но вы админ, моё почтение, снимаю шляпу!'
+        if board.is_admin and board.board[num_cell - 1] == constants.DB:
+            self.long_text = '''\
+Ваш сервер случайно уронили. Но вы админ, моё почтение, снимаю шляпу!'''
             self.short_text = 'Восстановлена ячейка №%i'
         else:
             board.del_component(num_cell)
@@ -152,7 +157,8 @@ yyy: Я предупреждал... Ты почту когда последни�
 
 
 class BankruptEvent(BaseEvent):
-    if constants.TEST: cards_count = 1 + 500
+    if constants.TEST:
+        cards_count = 1 + 500
     short_text = 'Минус 1 очко на следующий ход.'
     long_text = ['''\
 Бюджет вашего стартапа резко кончился, а инвесторов всё ещё не нашли,
@@ -188,7 +194,7 @@ class AdminErrorEvent(BaseEvent):
         b = boards[num]
         new_b = [constants.EMPTY_CELL] * (constants.SIZE_BOARD**2)
         l_step = 0
-        for ost in range(constants.SIZE_BOARD-1, 0-1, -1):
+        for ost in range(constants.SIZE_BOARD - 1, 0 - 1, -1):
             for old_b_num in range(ost, constants.SIZE_BOARD**2, 4):
                 new_b[l_step] = b.board[old_b_num]
                 l_step += 1
@@ -207,7 +213,7 @@ class BonusEvent(BaseEvent):
         b_cap = board.cap(board.quantity_component(constants.API),
                           board.quantity_component(constants.DB),
                           board.quantity_component(constants.LB))
-        if b_cap < board.users+self.amount:
+        if b_cap < board.users + self.amount:
             board.change_users(-self.penalty)
         else:
             board.change_users(self.amount)
@@ -226,7 +232,8 @@ class Bonus3Event(BonusEvent):
 
 
 class DropComponentEvent(BaseEvent):
-    if constants.TEST:  cards_count = 1 + 200
+    if constants.TEST:
+        cards_count = 1 + 200
     short_text = "Сервис #%i потерян."
     long_text = ['''\
 Пришел oom-killer, в следующий раз пишите код лучше :-)''',
@@ -240,9 +247,12 @@ class DropComponentEvent(BaseEvent):
                       boards[num].all_nums_component(constants.LB) +
                       boards[num].all_nums_component(constants.BCKP))
         num_comp = random.choice(nums_comps)
-        if boards[num].is_admin and boards[num].board[num_comp-1] == constants.DB:
-            self.short_text = "Благодаря тому, что вы админ, компонент #%i не был потерян."
-        else: boards[num].del_component(num_comp)
+        if boards[num].is_admin and boards[num].board[num_comp -
+                                                      1] == constants.DB:
+            self.short_text = ("Благодаря тому, что вы админ, компонент #%i "
+                               "не был потерян.")
+        else:
+            boards[num].del_component(num_comp)
         return num_comp
 
 
@@ -259,9 +269,9 @@ yyy: Теперь наши пользователи обслуживаются �
         boards[num].change_users(-2)
         if num == len(boards) - 1:
             boards[0].change_users(1)
-            boards[num-1].change_users(1)
+            boards[num - 1].change_users(1)
         elif num == 0:
-            boards[len(boards)-1].change_users(1)
+            boards[len(boards) - 1].change_users(1)
             boards[num + 1].change_users(1)
         else:
             boards[num - 1].change_users(1)
@@ -270,7 +280,8 @@ yyy: Теперь наши пользователи обслуживаются �
 
 
 class DropRackEvent(BaseEvent):
-    if constants.TEST:  cards_count = 2 + 100
+    if constants.TEST:
+        cards_count = 2 + 100
     short_text = "Вылетела стойка #%i"
     long_text = ['''\
 Наступила летняя жара, а зимой лишний кондиционер был не нужен и его продали.
@@ -285,10 +296,12 @@ class DropRackEvent(BaseEvent):
         # фактически генерим номер стойки
         n = random.randint(1, 4)
         if boards[num].is_admin:
-            self.long_text = 'Одна из ваших стоек начала барахлить, но вы, админ, очень грозно на неё посмотрели, и она заработала.'
+            self.long_text = (
+                'Одна из ваших стоек начала барахлить, но вы, '
+                'админ, очень грозно на неё посмотрели, и она заработала.')
             self.short_text = 'Вы не дали упасть стойке #%i'
         else:
-            for i in range(n, constants.SIZE_BOARD**2+1, 4):
+            for i in range(n, constants.SIZE_BOARD**2 + 1, 4):
                 boards[num].del_component(i)
         return n
 
@@ -309,12 +322,14 @@ yyy: Куда-то не туда..."""
                       boards[num].all_nums_component(constants.LB) +
                       boards[num].all_nums_component(constants.BCKP))
         num_comp = random.choice(nums_comps)
-        comp = boards[num].board[num_comp-1]
+        comp = boards[num].board[num_comp - 1]
         if boards[num].is_admin and comp == constants.DB:
-            self.short_text = "Компонент #%i не ушел конкуренту справа, потому что вы его величество админ и ваши базы данных разбазариванию не подлежат ни при каких условиях."
+            self.short_text = """\
+Компонент #%i не ушел конкуренту справа, потому что вы его величество админ и
+ваши базы данных разбазариванию не подлежат ни при каких условиях."""
         else:
             boards[num].del_component(num_comp)
-            if num == len(boards)-1:
+            if num == len(boards) - 1:
                 num_new_board = 0
             else:
                 num_new_board = num + 1
