@@ -1,4 +1,7 @@
+TEST = False
+
 WIN_SCORE = 7  # До какого спринта играем
+if TEST: WIN_SCORE = 3  # До какого спринта играем
 
 # Очки
 FIRST_SPRINT_POINTS = 4
@@ -24,5 +27,3 @@ LIM_L = 3  # LB может обслуживать не больше 3х API
 LIM_B = 2
 
 SIZE_BOARD = 4  # ширина и высота квадратного игрового поля
-
-TEST = False

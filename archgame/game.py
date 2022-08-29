@@ -59,8 +59,10 @@ def main():  # - общий план того что делает програм
             max_users = -1
             winner = []
             for n in boards:
-                if n.users >= max_users:
+                if n.users > max_users:
                     max_users = n.users
+                    winner = [n.name]
+                elif n.users == max_users:
                     winner.append(n.name)
             gui.print_board(boards)
             gui.final(", ".join(winner))
