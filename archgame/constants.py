@@ -1,5 +1,4 @@
 TEST = False
-
 WIN_SCORE = 7  # До какого спринта играем
 if TEST: WIN_SCORE = 3  # До какого спринта играем
 
@@ -7,7 +6,6 @@ if TEST: WIN_SCORE = 3  # До какого спринта играем
 FIRST_SPRINT_POINTS = 4
 LIM_POINTS = 2  # Очки на один ход
 BANKRUPT_POINTS = LIM_POINTS // 2  # количество очков на ход при банкротстве
-
 
 # Обозначения игровых элементов
 API = "A"
