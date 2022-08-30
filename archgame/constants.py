@@ -1,6 +1,7 @@
 TEST = False
 WIN_SCORE = 7  # До какого спринта играем
-if TEST: WIN_SCORE = 3  # До какого спринта играем
+if TEST:
+    WIN_SCORE = 4  # До какого спринта играем
 
 # Очки
 FIRST_SPRINT_POINTS = 4
