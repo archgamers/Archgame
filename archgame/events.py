@@ -22,20 +22,20 @@ class BaseEvent(object):
             return random.choice(self.long_text)
         return self.long_text
 
-    def apply(self, boards, num):
+    def apply(self, gamers, num):
         # If applied - return True or tuple which will be formatted into
         #   output string.
         raise NotImplementedError()
 
-    def act(self, boards, num, gui):
-        result = self.apply(boards, num)
-        response = [boards[num].name + ":", self.random_long_text]
+    def act(self, gamers, num):
+        result = self.apply(gamers, num)
+        response = [gamers[num].name + ":", self.random_long_text]
         if result is None:
             response.append(self.immunity_text)
         else:
             response.append(self.short_text % result
                             if result is not True else self.short_text)
-        gui.cli_print(response)
+        gamers[num].input_message(response)
 
 
 # убрать бэкап, если есть, нет - 0 u
@@ -51,22 +51,22 @@ class DbaEvent(BaseEvent):
     immunity_text = '''Либо вы делаете бекапы, либо вы УЖЕ делаете бекапы,
 минус бекап, но база восстановлена.'''
 
-    def apply(self, boards, num):
-        board = boards[num]
-        if board.is_admin:
+    def apply(self, gamers, num):
+        if gamers[num].is_admin:
             self.long_text = '''\
-Ваш аутсорсер-DBA почти удалил таблицу, но вы вовремя дали ему по шапке и
-успешно сделали всё сами.'''
+Ваш аутсорсер-DBA переносил реплики и почти удалил таблицу,
+но вы вовремя дали ему по шапке и успешно сделали всё сами.'''
             self.short_text = '''Данные спасены.'''
             self.immunity_text = ''
             pass
         else:
-            if board.is_a_component(constants.BCKP):
-                board.del_component(
-                    random.choice(board.all_nums_component(constants.BCKP)))
+            if gamers[num].is_a_component(constants.BCKP):
+                gamers[num].del_component(
+                    random.choice(
+                        gamers[num].all_nums_component(constants.BCKP)))
                 return None
             else:
-                board.users = 0
+                gamers[num].users = 0
                 return True
 
 
@@ -82,10 +82,10 @@ class DelApiEvent(BaseEvent):
 Зато после обновления одна из ваших API не запустилась''',
                  ]
 
-    def apply(self, boards, num):
-        board = boards[num]
-        num_rand_comp = random.choice(board.all_nums_component(constants.API))
-        board.del_component(num_rand_comp)
+    def apply(self, gamers, num):
+        num_rand_comp = random.choice(
+            gamers[num].all_nums_component(constants.API))
+        gamers[num].del_component(num_rand_comp)
         return num_rand_comp
 
 
@@ -109,10 +109,10 @@ class AddRandomAPIEvent(BaseEvent):
         super().__init__()
         self.short_text = 'Получаете ' + self.component_name + ' в ячейку %i'
 
-    def apply(self, boards, num):
-        board = boards[num]
-        field = random.choice(board.all_nums_component(constants.EMPTY_CELL))
-        board.change_component(self.component, field)
+    def apply(self, gamers, num):
+        field = random.choice(
+            gamers[num].all_nums_component(constants.EMPTY_CELL))
+        gamers[num].change_component(self.component, field)
         return field
 
 
@@ -127,8 +127,8 @@ class AddRandomLBEvent(AddRandomAPIEvent):
 
 
 class DropCellEvent(BaseEvent):
-    if constants.TEST:
-        cards_count = 1 + 100
+    # if constants.TEST:
+    #     cards_count = 1 + 100
     short_text = 'Потеряна ячейка №%i'
     long_text = ['''\
 ECC Memory Correctable Errors detected.
@@ -144,21 +144,21 @@ xxx: Ну и какого...? Предупреждать надо!
 yyy: Я предупреждал... Ты почту когда последний раз читал?''',
                  ]
 
-    def apply(self, boards, num):
-        board = boards[num]
-        num_cell = random.randint(1, constants.SIZE_BOARD**2)
-        if board.is_admin and board.board[num_cell - 1] == constants.DB:
+    def apply(self, gamers, num):
+        num_cell = random.randint(1, constants.SIZE_BOARD ** 2)
+        if gamers[num].is_admin \
+                and (num_cell in gamers[num].all_nums_component(constants.DB)):
             self.long_text = '''\
 Ваш сервер случайно уронили. Но вы админ, моё почтение, снимаю шляпу!'''
             self.short_text = 'Восстановлена ячейка №%i'
         else:
-            board.del_component(num_cell)
+            gamers[num].del_component(num_cell)
         return num_cell
 
 
 class BankruptEvent(BaseEvent):
-    if constants.TEST:
-        cards_count = 1 + 500
+    # if constants.TEST:
+    #     cards_count = 1 + 500
     short_text = 'Минус 1 очко на следующий ход.'
     long_text = ['''\
 Бюджет вашего стартапа резко кончился, а инвесторов всё ещё не нашли,
@@ -166,8 +166,8 @@ class BankruptEvent(BaseEvent):
                  '''\
 В середине года бюджет на год был успешно освоен, ждите новостей.''']
 
-    def apply(self, boards, num):
-        boards[num].bankrupt_points()
+    def apply(self, gamers, num):
+        gamers[num].bankrupt_points()
         return True
 
 
@@ -190,15 +190,14 @@ class AdminErrorEvent(BaseEvent):
 ...
 Теперь говорят, что так лучше для охлаждения.''']
 
-    def apply(self, boards, num):
-        b = boards[num]
-        new_b = [constants.EMPTY_CELL] * (constants.SIZE_BOARD**2)
+    def apply(self, gamers, num):
+        new_b = [constants.EMPTY_CELL] * (constants.SIZE_BOARD ** 2)
         l_step = 0
         for ost in range(constants.SIZE_BOARD - 1, 0 - 1, -1):
-            for old_b_num in range(ost, constants.SIZE_BOARD**2, 4):
-                new_b[l_step] = b.board[old_b_num]
+            for old_b_num in range(ost, constants.SIZE_BOARD ** 2, 4):
+                new_b[l_step] = gamers[num].return_comp(old_b_num)
                 l_step += 1
-        boards[num].board = new_b
+        gamers[num].board.board = new_b
         return True
 
 
@@ -207,16 +206,15 @@ class BonusEvent(BaseEvent):
     penalty = 1
     short_text = "Пришло %iк, если не тянешь — потеря %iк"
 
-    def apply(self, boards, num):
+    def apply(self, gamers, num):
         # TODO: fix texts
-        board = boards[num]
-        b_cap = board.cap(board.quantity_component(constants.API),
-                          board.quantity_component(constants.DB),
-                          board.quantity_component(constants.LB))
-        if b_cap < board.users + self.amount:
-            board.change_users(-self.penalty)
+        b_cap = gamers[num].cap(gamers[num].quantity_component(constants.API),
+                                gamers[num].quantity_component(constants.DB),
+                                gamers[num].quantity_component(constants.LB))
+        if b_cap < gamers[num].users + self.amount:
+            gamers[num].change_users(-self.penalty)
         else:
-            board.change_users(self.amount)
+            gamers[num].change_users(self.amount)
         return self.amount, self.penalty
 
 
@@ -232,8 +230,8 @@ class Bonus3Event(BonusEvent):
 
 
 class DropComponentEvent(BaseEvent):
-    if constants.TEST:
-        cards_count = 1 + 200
+    # if constants.TEST:
+    #     cards_count = 1 + 200
     short_text = "Сервис #%i потерян."
     long_text = ['''\
 Пришел oom-killer, в следующий раз пишите код лучше :-)''',
@@ -241,22 +239,23 @@ class DropComponentEvent(BaseEvent):
 Опа, Segmentation fault...''',
                  ]
 
-    def apply(self, boards, num):
-        nums_comps = (boards[num].all_nums_component(constants.API) +
-                      boards[num].all_nums_component(constants.DB) +
-                      boards[num].all_nums_component(constants.LB) +
-                      boards[num].all_nums_component(constants.BCKP))
+    def apply(self, gamers, num):
+        nums_comps = (gamers[num].all_nums_component(constants.API) +
+                      gamers[num].all_nums_component(constants.DB) +
+                      gamers[num].all_nums_component(constants.LB) +
+                      gamers[num].all_nums_component(constants.BCKP))
         num_comp = random.choice(nums_comps)
-        if boards[num].is_admin and boards[num].board[num_comp -
-                                                      1] == constants.DB:
+        if gamers[num].is_admin \
+                and (num_comp in gamers[num].all_nums_component(constants.DB)):
             self.short_text = ("Благодаря тому, что вы админ, компонент #%i "
                                "не был потерян.")
         else:
-            boards[num].del_component(num_comp)
+            gamers[num].del_component(num_comp)
         return num_comp
 
 
 class MoveComplonentToCompetitorEvent(BaseEvent):
+    cards_count = 2 + 1000
     short_text = "По 1к пользователей ушли к конкуренту справа и слева"
     long_text = '''\
 xxx: Гляди какое дело... Вижу по графикам, что нагрузка уменьшилась
@@ -265,23 +264,34 @@ yyy: Хм, NOC'и говорят что продали префикс в кот�
 yyy: А в DNS мы поменять забыли...
 yyy: Теперь наши пользователи обслуживаются кем-то... Но не нами ((('''
 
-    def apply(self, boards, num):
-        boards[num].change_users(-2)
-        if num == len(boards) - 1:
-            boards[0].change_users(1)
-            boards[num - 1].change_users(1)
-        elif num == 0:
-            boards[len(boards) - 1].change_users(1)
-            boards[num + 1].change_users(1)
+    def apply(self, gamers, num):
+        if gamers[num].users >= 2:
+            if num == len(gamers) - 1:
+                gamers[0].change_users(1)
+                gamers[num - 1].change_users(1)
+            elif num == 0:
+                gamers[len(gamers) - 1].change_users(1)
+                gamers[num + 1].change_users(1)
+            else:
+                gamers[num - 1].change_users(1)
+                gamers[num + 1].change_users(1)
         else:
-            boards[num - 1].change_users(1)
-            boards[num + 1].change_users(1)
+            if gamers[num].users == 0:
+                self.short_text = "Конкурентам не повезло, пользователей нет."
+            if gamers[num].users == 1:
+                self.short_text = "Пользователь ушел конкуренту справа"
+                gamers[num].change_users(-1)
+                if num == len(gamers) - 1:
+                    gamers[0].change_users(1)
+                else:
+                    gamers[num + 1].change_users(1)
+        gamers[num].change_users(-2)
         return True
 
 
 class DropRackEvent(BaseEvent):
-    if constants.TEST:
-        cards_count = 2 + 100
+    # if constants.TEST:
+    #     cards_count = 2 + 100
     short_text = "Вылетела стойка #%i"
     long_text = ['''\
 Наступила летняя жара, а зимой лишний кондиционер был не нужен и его продали.
@@ -292,17 +302,17 @@ class DropRackEvent(BaseEvent):
 ...
 Помянем.''']
 
-    def apply(self, boards, num):
+    def apply(self, gamers, num):
         # фактически генерим номер стойки
         n = random.randint(1, 4)
-        if boards[num].is_admin:
+        if gamers[num].is_admin:
             self.long_text = (
                 'Одна из ваших стоек начала барахлить, но вы, '
                 'админ, очень грозно на неё посмотрели, и она заработала.')
             self.short_text = 'Вы не дали упасть стойке #%i'
         else:
-            for i in range(n, constants.SIZE_BOARD**2 + 1, 4):
-                boards[num].del_component(i)
+            for i in range(n, constants.SIZE_BOARD ** 2 + 1, 4):
+                gamers[num].del_component(i)
         return n
 
 
@@ -316,32 +326,33 @@ yyy: Слушай, тут такое дело...
 yyy: Кажется мы перепутали и задеплоили ваш сервис...
 yyy: Куда-то не туда..."""
 
-    def apply(self, boards, num):
-        nums_comps = (boards[num].all_nums_component(constants.API) +
-                      boards[num].all_nums_component(constants.DB) +
-                      boards[num].all_nums_component(constants.LB) +
-                      boards[num].all_nums_component(constants.BCKP))
+    def apply(self, gamers, num):
+        nums_comps = (gamers[num].all_nums_component(constants.API) +
+                      gamers[num].all_nums_component(constants.DB) +
+                      gamers[num].all_nums_component(constants.LB) +
+                      gamers[num].all_nums_component(constants.BCKP))
         num_comp = random.choice(nums_comps)
-        comp = boards[num].board[num_comp - 1]
-        if boards[num].is_admin and comp == constants.DB:
+        comp = gamers[num].return_comp(num_comp - 1)
+        if gamers[num].is_admin and comp == constants.DB:
             self.short_text = """\
 Компонент #%i не ушел конкуренту справа, потому что вы его величество админ и
 ваши базы данных разбазариванию не подлежат ни при каких условиях."""
         else:
-            boards[num].del_component(num_comp)
-            if num == len(boards) - 1:
+            gamers[num].del_component(num_comp)
+            if num == len(gamers) - 1:
                 num_new_board = 0
             else:
                 num_new_board = num + 1
             num_new_comp = random.choice(
-                boards[num_new_board].all_nums_component(constants.EMPTY_CELL))
-            boards[num_new_board].change_component(comp, num_new_comp)
+                gamers[num_new_board].all_nums_component(constants.EMPTY_CELL))
+            gamers[num_new_board].change_component(comp, num_new_comp)
         return num_comp
 
 
 clsmembers = inspect.getmembers(sys.modules[__name__], inspect.isclass)
 game_events = [event[1] for event in clsmembers if issubclass(event[1],
-               BaseEvent) and event[1] is not BaseEvent]
+                                                              BaseEvent)
+               and event[1] is not BaseEvent]
 
 
 class Events:
@@ -356,10 +367,10 @@ class Events:
         random.shuffle(self.events)
         return self.events
 
-    def random_event(self, boards, num, gui):
+    def random_event(self, gamers, num):
         try:
             random_ev = self.events.pop()
         except IndexError:
             self.events = self.refill_events()
             random_ev = self.events.pop()
-        random_ev().act(boards, num, gui)
+        random_ev().act(gamers, num)
