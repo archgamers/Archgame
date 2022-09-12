@@ -63,3 +63,8 @@ class Cli:
         lines[6] += line_c + " " * (constants.SIZE_BOARD * 2 + 3 -
                                     len(line_c))
         return lines
+
+
+class BotIO(Cli):
+    def output_input_msg(self, text):
+        super(BotIO, self).output_print_msg(text)

@@ -255,7 +255,7 @@ class DropComponentEvent(BaseEvent):
 
 
 class MoveComplonentToCompetitorEvent(BaseEvent):
-    cards_count = 2 + 1000
+    cards_count = 2
     short_text = "По 1к пользователей ушли к конкуренту справа и слева"
     long_text = '''\
 xxx: Гляди какое дело... Вижу по графикам, что нагрузка уменьшилась

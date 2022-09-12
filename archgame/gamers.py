@@ -1,3 +1,5 @@
+import random
+
 from archgame import obj
 from archgame import cli
 from archgame import constants
@@ -8,11 +10,13 @@ class InvalidUserInput(Exception):
 
 
 class Gamer:
-    def __init__(self, n, cl, flag_slow_print):
+    def __init__(self, name, class_per, flag_slow_print=False, g_cli=None):
+        self.users = 0
+        self.q_point = constants.FIRST_SPRINT_POINTS
         self.board = obj.Board()
-        self.cli = cli.Cli(flag_slow_print)
-        self.name = n
-        self.class_per = cl
+        self.name = name
+        self.class_per = class_per
+        self.cli = g_cli or cli.Cli(flag_slow_print)
         # Где-нибудь решить, что делать с классом - передавать его в боард
         # для счета капасити прогеру или здесь эту логику сделать...
         if self.is_proger:
@@ -20,8 +24,6 @@ class Gamer:
         else:
             # API может выдержать до 3к нагрузки
             self.board.lim_a = constants.LIM_A
-        self.q_point = constants.FIRST_SPRINT_POINTS
-        self.users = 0
 
     @property
     def is_cli(self):
@@ -85,8 +87,8 @@ class Gamer:
     def action(self):
         while True:
             try:
-                inpt_str = self.cli.ask(self.name)
-                choices = inpt_str.split(',')
+                input_str = self.cli.ask(self.name)
+                choices = input_str.split(',')
                 self.validate_input_user(choices)
                 ans = [0, []]
                 for i in choices:
@@ -167,3 +169,27 @@ class Gamer:
 
     def return_comp(self, num):
         return self.board.board[num]
+
+
+class Bot(Gamer):
+    def __init__(self, num, flag_slow_print=False, g_cli=None):
+        super(Bot, self).__init__("Bot" + str(num),
+                                  random.choice(["A", "M", "P"]),
+                                  flag_slow_print=flag_slow_print,
+                                  g_cli=g_cli)
+        self.default_start()
+
+    # Здесь будет содержаться логика бота на if-чиках
+    def action(self):
+        pass
+
+    # Дефолтное расположение, для первого хода бота
+    def default_start(self):
+        self.board.change_component("A", 1)
+        self.board.change_component("D", 6)
+        # Если это админ, то бэкап ему не нужен, ставим балансер
+        if self.is_admin:
+            self.board.change_component("L", 11)
+        else:
+            self.board.change_component("B", 11)
+        self.board.change_component("A", 16)
