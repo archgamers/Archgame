@@ -78,9 +78,9 @@ class GameServer:
                 for gamer in self.gamers:
                     if gamer.users > max_users:
                         max_users = gamer.users
-                        winner = [gamer.name]
+                        winner = [gamer.name + " " + gamer.class_per]
                     elif gamer.users == max_users:
-                        winner.append(gamer.name)
+                        winner.append(gamer.name + " " + gamer.class_per)
                 self.print_boards()
                 self.final(", ".join(winner))
 

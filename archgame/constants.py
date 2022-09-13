@@ -12,9 +12,9 @@ BANKRUPT_POINTS = LIM_POINTS // 2  # количество очков на ход
 API = "A"
 DB = "D"
 LB = "L"
-BCKP = "B"
+BACKUP = "B"
 EMPTY_CELL = " "
-POSSIBLE_INPUTS = [API, DB, LB, BCKP]
+POSSIBLE_INPUTS = [API, DB, LB, BACKUP]
 
 # Компоненты/сервисы
 LIM_A = 3  # API может выдержать до 3к нагрузки

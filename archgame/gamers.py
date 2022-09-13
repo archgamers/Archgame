@@ -179,9 +179,139 @@ class Bot(Gamer):
                                   g_cli=g_cli)
         self.default_start()
 
-    # Здесь будет содержаться логика бота на if-чиках
+    # Считает разницу между количеством юзеров и своим капасити
+    def users_vs_caps(self):
+        return abs(self.users - self.cap(
+            self.quantity_component(constants.API),
+            self.quantity_component(constants.DB),
+            self.quantity_component(constants.LB)))
+
+    # Случайная пустая ячейка
+    def random_empty_cell(self):
+        cells = self.all_nums_component(constants.EMPTY_CELL)
+        if cells == []:
+            return random.randint(0, constants.SIZE_BOARD**2)
+        return random.choice(cells)
+
+    # Все ф-ции logic_ содержат в себе логику траты 1 очка
+    # Менеджер: сначала наращивает капасити максимально(примерно до 18),
+    # потом начинает добавлять себе юзеров
+    def logic_manager(self):
+        q_A = self.quantity_component(constants.API)
+        q_D = self.quantity_component(constants.DB)
+        q_L = self.quantity_component(constants.LB)
+        q_B = self.quantity_component(constants.BACKUP)
+        if q_D < 1:
+            self.change_component(constants.DB, self.random_empty_cell())
+        elif q_A < 1:
+            self.change_component(constants.API, self.random_empty_cell())
+        elif q_B < 1:
+            self.change_component(constants.BACKUP, self.random_empty_cell())
+        elif q_A < 2:
+            self.change_component(constants.API, self.random_empty_cell())
+        elif q_L < 1:
+            self.change_component(constants.LB, self.random_empty_cell())
+        elif q_A < 3:
+            self.change_component(constants.API, self.random_empty_cell())
+        elif q_D < 2:
+            self.change_component(constants.DB, self.random_empty_cell())
+        elif q_L < 2:
+            self.change_component(constants.LB, self.random_empty_cell())
+        elif q_A < 6:
+            self.change_component(constants.API, self.random_empty_cell())
+        else:
+            self.change_users(1)
+
+    # Админ: наращивает капасити до 6, добавляет юзеров до 3,
+    # наращивает капасити до 9, добавляет юзеров до 6
+    # и т.д до капасити 18, после этого просто +юзеры
+    # в отличие от прогера не тратит очки на бэкапы
+    def logic_admin(self):
+        q_A = self.quantity_component(constants.API)
+        q_D = self.quantity_component(constants.DB)
+        q_L = self.quantity_component(constants.LB)
+        if q_D < 1:
+            self.change_component(constants.DB, self.random_empty_cell())
+        elif q_A < 1:
+            self.change_component(constants.API, self.random_empty_cell())
+        elif q_L < 1:
+            self.change_component(constants.LB, self.random_empty_cell())
+        elif q_A < 2:
+            self.change_component(constants.API, self.random_empty_cell())
+        elif self.users_vs_caps() > 3:
+            self.change_users(1)
+        elif q_A < 3:
+            self.change_component(constants.API, self.random_empty_cell())
+        elif self.users_vs_caps() > 3:
+            self.change_users(1)
+        elif q_D < 2:
+            self.change_component(constants.DB, self.random_empty_cell())
+        elif q_L < 2:
+            self.change_component(constants.LB, self.random_empty_cell())
+        elif q_A < 4:
+            self.change_component(constants.API, self.random_empty_cell())
+        elif self.users_vs_caps() > 3:
+            self.change_users(1)
+        elif q_A < 5:
+            self.change_component(constants.API, self.random_empty_cell())
+        elif self.users_vs_caps() > 3:
+            self.change_users(1)
+        elif q_A < 6:
+            self.change_component(constants.API, self.random_empty_cell())
+        else:
+            self.change_users(1)
+
+    # Программист: наращивает капасити до 5, добавляет юзеров до 2,
+    # наращивает капасити до 10, добавляет юзеров до 7
+    # и т.д до капасити 20, после этого просто +юзеры
+    def logic_proger(self):
+        q_A = self.quantity_component(constants.API)
+        q_D = self.quantity_component(constants.DB)
+        q_L = self.quantity_component(constants.LB)
+        q_B = self.quantity_component(constants.BACKUP)
+        if q_D < 1:
+            self.change_component(constants.DB, self.random_empty_cell())
+        elif q_A < 1:
+            self.change_component(constants.API, self.random_empty_cell())
+        elif q_B < 1:
+            self.change_component(constants.BACKUP, self.random_empty_cell())
+        elif self.users_vs_caps() > 3:
+            self.change_users(1)
+        elif q_A < 2:
+            self.change_component(constants.API, self.random_empty_cell())
+        elif q_L < 1:
+            self.change_component(constants.LB, self.random_empty_cell())
+        elif self.users_vs_caps() > 3:
+            self.change_users(1)
+        elif q_D < 2:
+            self.change_component(constants.DB, self.random_empty_cell())
+        elif q_L < 2:
+            self.change_component(constants.LB, self.random_empty_cell())
+        elif self.users_vs_caps() > 3:
+            self.change_users(1)
+        elif q_A < 3:
+            self.change_component(constants.API, self.random_empty_cell())
+        elif self.users_vs_caps() > 3:
+            self.change_users(1)
+        elif q_A < 4:
+            self.change_component(constants.API, self.random_empty_cell())
+        else:
+            self.change_users(1)
+
+    # Содержит логику ходов бота
     def action(self):
-        pass
+        if self.q_point == 4:
+            self.default_start()
+            return 0
+        points = self.q_point
+        while points != 0:
+            if self.is_manager:
+                self.logic_manager()
+            if self.is_admin:
+                self.logic_admin()
+            if self.is_proger:
+                self.logic_proger()
+            points -= 1
 
     # Дефолтное расположение, для первого хода бота
     def default_start(self):

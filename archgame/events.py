@@ -60,10 +60,10 @@ class DbaEvent(BaseEvent):
             self.immunity_text = ''
             pass
         else:
-            if gamers[num].is_a_component(constants.BCKP):
+            if gamers[num].is_a_component(constants.BACKUP):
                 gamers[num].del_component(
                     random.choice(
-                        gamers[num].all_nums_component(constants.BCKP)))
+                        gamers[num].all_nums_component(constants.BACKUP)))
                 return None
             else:
                 gamers[num].users = 0
@@ -243,7 +243,7 @@ class DropComponentEvent(BaseEvent):
         nums_comps = (gamers[num].all_nums_component(constants.API) +
                       gamers[num].all_nums_component(constants.DB) +
                       gamers[num].all_nums_component(constants.LB) +
-                      gamers[num].all_nums_component(constants.BCKP))
+                      gamers[num].all_nums_component(constants.BACKUP))
         num_comp = random.choice(nums_comps)
         if gamers[num].is_admin \
                 and (num_comp in gamers[num].all_nums_component(constants.DB)):
@@ -330,7 +330,7 @@ yyy: Куда-то не туда..."""
         nums_comps = (gamers[num].all_nums_component(constants.API) +
                       gamers[num].all_nums_component(constants.DB) +
                       gamers[num].all_nums_component(constants.LB) +
-                      gamers[num].all_nums_component(constants.BCKP))
+                      gamers[num].all_nums_component(constants.BACKUP))
         num_comp = random.choice(nums_comps)
         comp = gamers[num].return_comp(num_comp - 1)
         if gamers[num].is_admin and comp == constants.DB:
