@@ -1,3 +1,5 @@
+import random
+
 from archgame import game_server
 from archgame import texts
 from archgame import events
@@ -26,7 +28,8 @@ def game_starter():
 
     # Создаем ботов
     for i in range(q_b):
-        gamers.append(classes_gamers.Bot(i+1, flag_slow_print=FLAG_SLOW_PRINT))
+        gamers.append(classes_gamers.Bot(i+1, random.choice(["A", "M", "P"]),
+                                         flag_slow_print=FLAG_SLOW_PRINT))
 
     print(texts.ASK_CLASSES)
     for i in range(1, q_g + 1, 1):

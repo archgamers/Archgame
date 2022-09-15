@@ -68,3 +68,26 @@ class Cli:
 class BotIO(Cli):
     def output_input_msg(self, text):
         super(BotIO, self).output_print_msg(text)
+
+
+class EmptyIO(Cli):
+    def output_input_msg(self, text):
+        pass
+
+    def output_print_msg(self, text):
+        pass
+
+    def print_board(self, board, name, class_per, users, cap):
+        return []
+
+    def statistic(self, statistics):
+        for c in statistics:
+            print(
+                "Class:{0} Count:{1} Users:{2}/{3}/{4} Cap:{5}/{6}/{7}".format(
+                    c, statistics[c][0],
+                    statistics[c][1][0],
+                    statistics[c][1][1],
+                    statistics[c][1][2],
+                    statistics[c][2][0],
+                    statistics[c][2][1],
+                    statistics[c][2][2]))

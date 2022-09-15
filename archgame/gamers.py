@@ -49,6 +49,16 @@ class Gamer:
             return True
         return False
 
+    @property
+    def caps(self):
+        return self.board.cap(
+                        self.board.quantity_component(
+                            constants.API),
+                        self.board.quantity_component(
+                            constants.DB),
+                        self.board.quantity_component(
+                            constants.LB))
+
     def default_points(self):
         self.q_point = constants.LIM_POINTS
 
@@ -172,9 +182,9 @@ class Gamer:
 
 
 class Bot(Gamer):
-    def __init__(self, num, flag_slow_print=False, g_cli=None):
+    def __init__(self, num, cl, flag_slow_print=False, g_cli=None):
         super(Bot, self).__init__("Bot" + str(num),
-                                  random.choice(["A", "M", "P"]),
+                                  cl,
                                   flag_slow_print=flag_slow_print,
                                   g_cli=g_cli)
         self.default_start()
