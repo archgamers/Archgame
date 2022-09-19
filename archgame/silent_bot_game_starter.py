@@ -9,13 +9,12 @@ from archgame import cli
 # Запускает главный цикл игры
 def game_starter():
     flag_slow_print = False
-    q_game = int(input("Введите количество игр "))
+    q_game = int(input("Введите количество игр ").strip())
     all_gamers = []
-    q_b = input("Введите количество ботов на одну игру ")
+    q_b = input("Введите количество ботов на одну игру ").strip()
     while not q_b.isdigit():
         print("Введите, пожалуйста, цифру, мы такое не понимаем.")
         q_b = input("Введите количество ботов")
-        q_b = int(q_b)
     q_b = int(q_b)
     pattern = input("Задайте шаблон классов через запятую")
     for game in range(q_game):

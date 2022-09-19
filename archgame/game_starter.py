@@ -3,6 +3,7 @@ import random
 from archgame import game_server
 from archgame import texts
 from archgame import events
+from archgame import cli
 from archgame import gamers as classes_gamers
 
 FLAG_SLOW_PRINT = False
@@ -11,6 +12,7 @@ FLAG_SLOW_PRINT = False
 # Создает экземпляры всех классов
 # Запускает главный цикл игры
 def game_starter():
+    flag_slow_print = False
     q_g = input(texts.ASK_QUANTITY)
     while not q_g.isdigit():
         print("Введите, пожалуйста, цифру, мы такое не понимаем.")
@@ -28,8 +30,16 @@ def game_starter():
 
     # Создаем ботов
     for i in range(q_b):
-        gamers.append(classes_gamers.Bot(i+1, random.choice(["A", "M", "P"]),
-                                         flag_slow_print=FLAG_SLOW_PRINT))
+        if q_g == 0:
+            io_for_all = cli.BotIO(flag_slow_print)
+            gamers.append(
+                classes_gamers.Bot(i + 1, random.choice(["A", "M", "P"]),
+                                   g_cli=io_for_all,
+                                   flag_slow_print=FLAG_SLOW_PRINT))
+        else:
+            gamers.append(
+                classes_gamers.Bot(i + 1, random.choice(["A", "M", "P"]),
+                                   flag_slow_print=FLAG_SLOW_PRINT))
 
     print(texts.ASK_CLASSES)
     for i in range(1, q_g + 1, 1):
