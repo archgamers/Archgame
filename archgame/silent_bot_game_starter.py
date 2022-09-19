@@ -9,19 +9,24 @@ from archgame import cli
 # Запускает главный цикл игры
 def game_starter():
     flag_slow_print = False
-    q_b = input("Введите количество ботов ")
-    pattern = input("Задайте шаблон классов через запятую")
+    q_game = int(input("Введите количество игр "))
+    all_gamers = []
+    q_b = input("Введите количество ботов на одну игру ")
     while not q_b.isdigit():
         print("Введите, пожалуйста, цифру, мы такое не понимаем.")
         q_b = input("Введите количество ботов")
+        q_b = int(q_b)
     q_b = int(q_b)
-    gamers = []
-    io_for_all = cli.EmptyIO(flag_slow_print)
-    for i, cl in zip(range(q_b), itertools.cycle(pattern.split(','))):
-        gamers.append(classes_gamers.Bot(i + 1, cl, g_cli=io_for_all))
-    ev = events.Events()
-    gserv = game_server.GameServer(gamers, ev)
-    gserv.main_cycle()
+    pattern = input("Задайте шаблон классов через запятую")
+    for game in range(q_game):
+        gamers = []
+        io_for_all = cli.EmptyIO(flag_slow_print)
+        for i, cl in zip(range(q_b), itertools.cycle(pattern.split(','))):
+            gamers.append(classes_gamers.Bot(i + 1, cl, g_cli=io_for_all))
+        all_gamers += gamers
+        ev = events.Events()
+        gserv = game_server.GameServer(gamers, ev)
+        gserv.main_cycle()
 
     # логика сбора статистики с помощью gserv.gamers
     # ключ statistics - Class,
@@ -31,7 +36,7 @@ def game_starter():
     statistics = {"A": [0, [100000, 0, 0], [100000, 0, 0]],
                   "M": [0, [100000, 0, 0], [100000, 0, 0]],
                   "P": [0, [100000, 0, 0], [100000, 0, 0]]}
-    for gamer in gserv.gamers:
+    for gamer in all_gamers:
         statistics[gamer.class_per][0] += 1
 
         statistics[gamer.class_per][1][0] = min(
