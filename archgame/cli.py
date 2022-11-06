@@ -1,5 +1,6 @@
 import sys
 import time
+import telebot
 
 from archgame import texts
 from archgame import constants
@@ -91,3 +92,31 @@ class EmptyIO(Cli):
                     statistics[c][2][0],
                     statistics[c][2][1],
                     statistics[c][2][2]))
+
+
+class TelegramIO(Cli):
+    def __init__(self, bot, chat_id):
+        super(TelegramIO, self).__init__(False)
+        self.slow_print = False
+        self.bot = bot
+        self.chat_id = chat_id
+
+    # Сделала 2 одинаковые по функционалу метода, чтобы не переписывать
+    # уже написанный код.
+    def output_input_msg(self, text):
+        self.bot.send_message(self.chat_id, text)
+
+    def output_print_msg(self, text):
+        self.bot.send_message(self.chat_id, text)
+
+    # buttons - словарь вида
+    # {"callbackdata": "что должно быть написано на кнопке"}
+    def create_keyboard(self, message_text, buttons):
+        keyboard = telebot.types.InlineKeyboardMarkup()
+        for current_callbackdata in buttons:
+            key_1 = telebot.types.InlineKeyboardButton(
+                text=buttons[current_callbackdata],
+                callback_data=current_callbackdata)
+            keyboard.add(key_1)  # добавляем кнопку в клавиатуру
+        self.bot.send_message(self.chat_id, text=message_text,
+                              reply_markup=keyboard)

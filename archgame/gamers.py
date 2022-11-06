@@ -1,4 +1,5 @@
 import random
+import telebot
 
 from archgame import obj
 from archgame import cli
@@ -10,7 +11,7 @@ class InvalidUserInput(Exception):
 
 
 class Gamer:
-    def __init__(self, name, class_per, flag_slow_print=False, g_cli=None):
+    def __init__(self, name, class_per="", flag_slow_print=False, g_cli=None):
         self.users = 0
         self.q_point = constants.FIRST_SPRINT_POINTS
         self.board = obj.Board()
@@ -58,6 +59,9 @@ class Gamer:
                             constants.DB),
                         self.board.quantity_component(
                             constants.LB))
+
+    def set_class(self, cl):
+        self.class_per = cl
 
     def default_points(self):
         self.q_point = constants.LIM_POINTS
@@ -333,3 +337,38 @@ class Bot(Gamer):
         else:
             self.board.change_component("B", 11)
         self.board.change_component("A", 16)
+
+
+class TelegaGamer(Gamer):
+    def __init__(self, name, user_id, class_per="", game="", flag_slow_print=False, g_cli=None):
+        super(TelegaGamer, self).__init__(name,
+                                  class_per=class_per,
+                                  flag_slow_print=flag_slow_print,
+                                  g_cli=g_cli)
+        self.user_id = user_id
+        self.game = game
+        # Начальное состояние
+        # про игрока ещё ничего неизвестно
+        self.status = "init"
+
+    def get_status(self):
+        return self.status
+
+    def get_id(self):
+        return self.user_id
+
+    def change_status(self, new_status):
+        self.status = new_status
+
+    def fsm(self, message):
+        pass
+        # if self.status == :
+        #     self.func(message)
+        #     self.status =
+        # elif ...
+        # # так сделать обработку каждого состояния
+
+    def create_keyboard(self, message_text, buttons):
+        self.cli.create_keyboard(message_text, buttons)
+
+
