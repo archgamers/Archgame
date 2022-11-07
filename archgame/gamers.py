@@ -1,3 +1,4 @@
+# -*-coding: utf-8 -*-
 import random
 import telebot
 
@@ -127,8 +128,8 @@ class Gamer:
                 return ()
             except InvalidUserInput:
                 self.cli.output_print_msg(
-                    'Некорректный ввод, пожалуйста, попробуйте снова,\n'
-                    'Помните, что на ход вам даётся %d очка' %
+                    'Некорректный ввод, пожалуйста, попробуйте снова, '
+                    'помните, что на ход вам даётся %d очка' %
                     self.q_point)
 
     def print_message(self, texts):
@@ -340,11 +341,12 @@ class Bot(Gamer):
 
 
 class TelegaGamer(Gamer):
-    def __init__(self, name, user_id, class_per="", game="", flag_slow_print=False, g_cli=None):
+    def __init__(self, name, user_id, class_per="", game="",
+                 flag_slow_print=False, g_cli=None):
         super(TelegaGamer, self).__init__(name,
-                                  class_per=class_per,
-                                  flag_slow_print=flag_slow_print,
-                                  g_cli=g_cli)
+                                          class_per=class_per,
+                                          flag_slow_print=flag_slow_print,
+                                          g_cli=g_cli)
         self.user_id = user_id
         self.game = game
         # Начальное состояние
@@ -360,6 +362,9 @@ class TelegaGamer(Gamer):
     def change_status(self, new_status):
         self.status = new_status
 
+    def add_to_game(self, game):
+        self.game = game
+
     def fsm(self, message):
         pass
         # if self.status == :
@@ -370,5 +375,3 @@ class TelegaGamer(Gamer):
 
     def create_keyboard(self, message_text, buttons):
         self.cli.create_keyboard(message_text, buttons)
-
-

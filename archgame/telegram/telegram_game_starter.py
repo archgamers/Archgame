@@ -1,3 +1,4 @@
+# -*-coding: utf-8 -*-
 import telebot
 import logging
 import uuid
@@ -85,6 +86,8 @@ class GameStorage:
     def start_game(self, num):
         game = game_server.GameServer(self.dict_games[num], events.Events())
         self.dict_games[num] = game
+        for gamer in self.dict_games[num]:
+            gamer.add_to_game(game)
 
 
 global all_telega_data
@@ -148,6 +151,14 @@ def on_user_message(message):
     #  надо обсудить
     elif status == "soloplay init":
         current_gamer.print_message("Введи количество ботов")
+        current_gamer.change_status("soloplay start")
+    elif status == "soloplay start":
+        try:
+            num = int(message.text.strip())
+            pass  # создать игру на него и на его кол-во ботов
+        except Exception:
+            current_gamer.print_message("Введи количество ботов цифрами, "
+                                        "пожалуйста.")
     elif status == "friendsplay init":
         text = ("""Чтобы сыграть с друзьями в игру, её нужно сначала создать.
 Если кто-то это уже сделал - нажимай Присоединиться.
@@ -207,7 +218,7 @@ def callback_worker(call):
     elif call.data == "choose friendsplay":
         log.info("User %d chose friendsplay" % current_gamer.get_id())
         current_gamer.change_status("wait start friendplay")
-        #bot.register_next_step_handler(friends_play)  # пока просто выбор
+        # bot.register_next_step_handler(friends_play)  # пока просто выбор
         # кнопка "выбрать игру / присоединиться к существующей"
 
     # если пользователь генерит игру - то создать игру

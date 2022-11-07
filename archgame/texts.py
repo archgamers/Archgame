@@ -1,3 +1,4 @@
+# -*-coding: utf-8 -*-
 from archgame import constants
 
 ASK_QUANTITY = "Сколько будет игроков? "

@@ -1,3 +1,4 @@
+# -*-coding: utf-8 -*-
 from archgame import texts
 from archgame import constants
 
@@ -30,7 +31,7 @@ class GameServer:
             self.gamers[num].class_benefit()
 
     def begin(self, num_sprint):
-        self.print_all('\n\n\n')
+        # self.print_all('\n\n\n')
         self.print_all(texts.SPRINTS % num_sprint)
         if num_sprint == 1:
             self.print_all(texts.DESC % constants.FIRST_SPRINT_POINTS)

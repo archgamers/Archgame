@@ -1,3 +1,4 @@
+# -*-coding: utf-8 -*-
 import sys
 import time
 import telebot
@@ -101,22 +102,25 @@ class TelegramIO(Cli):
         self.bot = bot
         self.chat_id = chat_id
 
-    # Сделала 2 одинаковые по функционалу метода, чтобы не переписывать
-    # уже написанный код.
+    # РЎРґРµР»Р°Р»Р° 2 РѕРґРёРЅР°РєРѕРІС‹Рµ РїРѕ С„СѓРЅРєС†РёРѕРЅР°Р»Сѓ РјРµС‚РѕРґР°, С‡С‚РѕР±С‹ РЅРµ РїРµСЂРµРїРёСЃС‹РІР°С‚СЊ
+    # СѓР¶Рµ РЅР°РїРёСЃР°РЅРЅС‹Р№ РєРѕРґ.
     def output_input_msg(self, text):
         self.bot.send_message(self.chat_id, text)
 
     def output_print_msg(self, text):
         self.bot.send_message(self.chat_id, text)
 
-    # buttons - словарь вида
-    # {"callbackdata": "что должно быть написано на кнопке"}
+    def ask(self, name):
+         pass  # РїСЂРёРґСѓРјР°С‚СЊ СЃС…РµРјСѓ СЃРѕСЃС‚РѕСЏРЅРёР№...
+
+    # buttons - СЃР»РѕРІР°СЂСЊ РІРёРґР°
+    # {"callbackdata": "С‡С‚Рѕ РґРѕР»Р¶РЅРѕ Р±С‹С‚СЊ РЅР°РїРёСЃР°РЅРѕ РЅР° РєРЅРѕРїРєРµ"}
     def create_keyboard(self, message_text, buttons):
         keyboard = telebot.types.InlineKeyboardMarkup()
         for current_callbackdata in buttons:
             key_1 = telebot.types.InlineKeyboardButton(
                 text=buttons[current_callbackdata],
                 callback_data=current_callbackdata)
-            keyboard.add(key_1)  # добавляем кнопку в клавиатуру
+            keyboard.add(key_1)  # РґРѕР±Р°РІР»СЏРµРј РєРЅРѕРїРєСѓ РІ РєР»Р°РІРёР°С‚СѓСЂСѓ
         self.bot.send_message(self.chat_id, text=message_text,
                               reply_markup=keyboard)
