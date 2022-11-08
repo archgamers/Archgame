@@ -111,7 +111,7 @@ class TelegramIO(Cli):
         self.bot.send_message(self.chat_id, text)
 
     def ask(self, name):
-         pass  # придумать схему состояний...
+        self.gamer.set_status("wait answer on action")
 
     # buttons - словарь вида
     # {"callbackdata": "что должно быть написано на кнопке"}

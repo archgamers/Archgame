@@ -64,6 +64,9 @@ class Gamer:
     def set_class(self, cl):
         self.class_per = cl
 
+    def get_class(self):
+        return self.class_per
+
     def default_points(self):
         self.q_point = constants.LIM_POINTS
 
@@ -352,6 +355,7 @@ class TelegaGamer(Gamer):
         # Начальное состояние
         # про игрока ещё ничего неизвестно
         self.status = "init"
+        self.input_str = ""
 
     def get_status(self):
         return self.status
@@ -365,13 +369,40 @@ class TelegaGamer(Gamer):
     def add_to_game(self, game):
         self.game = game
 
-    def fsm(self, message):
-        pass
-        # if self.status == :
-        #     self.func(message)
-        #     self.status =
-        # elif ...
-        # # так сделать обработку каждого состояния
-
     def create_keyboard(self, message_text, buttons):
         self.cli.create_keyboard(message_text, buttons)
+
+    def action(self):
+        self.status = "waiting answer on action"
+        self.input_str = ""
+        while True:
+            try:
+                if self.status == "answered on action":
+                    choices = self.input_str.split(',')
+                    self.validate_input_user(choices)
+                    ans = [0, []]
+                    for i in choices:
+                        if i[0] == "1":  # добавить юзеров
+                            ans[0] += 1
+                        if i[0] == "2":  # добавить компонент
+                            two, comp, number = i.strip().split("-")
+                            ans[1].append([comp, int(number)])
+                    add_u, add_c = ans
+                    for i in add_c:
+                        component, num = i
+                        self.board.change_component(component, num)
+                    self.users = min(
+                        (add_u + self.users),
+                        self.board.cap(
+                            self.board.quantity_component(
+                                constants.API),
+                            self.board.quantity_component(
+                                constants.DB),
+                            self.board.quantity_component(
+                                constants.LB)))
+                    return ()
+            except InvalidUserInput:
+                self.cli.output_print_msg(
+                    'Некорректный ввод, пожалуйста, попробуйте снова, '
+                    'помните, что на ход вам даётся %d очка' %
+                    self.q_point)

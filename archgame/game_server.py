@@ -49,12 +49,17 @@ class GameServer:
     def final(self, winner):
         self.print_all(texts.ENDING % winner)
 
+    def one_step(self):
+        pass
+
     def main_cycle(self):
         winner = None
         num_sprint = 1
         while winner is None:
             self.begin(num_sprint)
             self.print_boards()
+            # all_asked = False
+            # while
             for gamer in self.gamers:
                 gamer.action()
                 # Возвращаем всем дефолтные очки на ход
