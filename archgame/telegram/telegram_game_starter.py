@@ -126,6 +126,7 @@ def on_user_message(message):
     status = current_gamer.get_status()
 
     log.debug("User %d send message:%s", current_gamer.get_id(), message.text)
+    log.debug("User's %d status:%s", current_gamer.get_id(), status)
 
     # Здесь обрабатываются все статусы,
     # напрямую связанные или подводящие к изменениям GameStorage,
@@ -134,22 +135,46 @@ def on_user_message(message):
     # до её непосредственного начала
     if status == "init":
         text = texts.GAME_OPTIONS
-        current_gamer.create_keyboard(text, {"choose tryplay": "1",
-                                             "choose soloplay": "2",
-                                             "choose friendsplay": "3"})
-        current_gamer.change_status("answer")
+        bot.send_message(message.from_user.id, text)
+        # current_gamer.create_keyboard(text, {"choose tryplay": "1",
+        #                                      "choose soloplay": "2",
+        #                                      "choose friendsplay": "3"})
+        current_gamer.change_status("answer on init")
         log.info("Waiting answer on init from user %d" % current_gamer.get_id()
                  )
-    elif status == "answer":
+    elif status == "answer on button":
         pass
+    elif status == "answer on init":
+        num = int(message.text.strip())
+        if num == 1:
+            current_gamer.change_status("tryplay init")
+        if num == 2:
+            current_gamer.change_status("soloplay init")
+        if num == 3:
+            current_gamer.change_status("friendsplay init")
     elif status == "tryplay init":
         text = texts.ASK_CLASSES_TELEGRAM
-        current_gamer.create_keyboard(text, {"admin": "Неустрашимый админ!",
-                                             "manager": "Всей душой менеджер",
-                                             "proger": "Программист."})
-        current_gamer.change_status("answer")
+        bot.send_message(message.from_user.id, text)
+        # current_gamer.create_keyboard(text, {"admin": "Неустрашимый админ!",
+        #                                      "manager": "Всей душой менеджер",
+        #                                      "proger": "Программист."})
+        current_gamer.change_status("answer on tryplay init")
         log.info(
             "Waiting for user %d to select a class", current_gamer.get_id())
+    elif status == "answer on tryplay init":
+        text = message.text.strip()
+        if text == "A" or text == "А":
+            current_gamer.set_class("A")
+            current_gamer.change_status("tryplay start")
+            log.info("User %d chose class A" % current_gamer.get_id())
+        if text == "M" or text == "М":
+            current_gamer.set_class("M")
+            current_gamer.change_status("tryplay start")
+            log.info("User %d chose class M" % current_gamer.get_id())
+        if text == "P" or text == "Р":
+            current_gamer.set_class("P")
+            current_gamer.change_status("tryplay start")
+            log.info("User %d chose class P" % current_gamer.get_id())
     elif status == "tryplay start":
         num = all_telega_data.create_game()
         # current_game = all_telega_data.get_game(num)
@@ -177,9 +202,9 @@ def on_user_message(message):
     elif status == "friendsplay init":
         text = texts.FREIENDSPLAY_OPTIONS
 
-        current_gamer.create_keyboard(text, {"add to game": "Присоединиться",
-                                             "create game": "Создать"})
-        current_gamer.change_status("answer")
+        # current_gamer.create_keyboard(text, {"add to game": "Присоединиться",
+        #                                      "create game": "Создать"})
+        current_gamer.change_status("answer on button")
         log.info("Waiting for user %d to select add to or create game" %
                  current_gamer.get_id())
     # если пользователь генерит игру - то создать игру
@@ -190,7 +215,7 @@ def on_user_message(message):
         all_telega_data.add_in_game(all_telega_data.get_game(num), current_id)
         bot.send_message(message.from_user.id, str(num))
         text = texts.CREATE_GAME
-        current_gamer.create_keyboard(text, {"start game": "Начать"})
+        # current_gamer.create_keyboard(text, {"start game": "Начать"})
         current_gamer.change_status("wait friends")
         log.info("User %d waiting friends to game %d" %
                  current_gamer.get_id(), num)
@@ -207,6 +232,8 @@ def on_user_message(message):
     if status == "answering on action":
         current_gamer.inpt_str = message.text
         current_gamer.change_status("answered on action")
+    log.debug("User's %d status:%s", current_gamer.get_id(),
+              current_gamer.get_status())
     bot.register_next_step_handler(message, on_user_message)
 
 
