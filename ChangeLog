@@ -1,6 +1,11 @@
 CHANGES
 =======
 
+* Without buttons, it doesn't work correctly too, the problem wasn't with the buttons
+* With buttons, the buttons don't work correctly, but they are. All texts were moved to text.py Bot don't work, because can't listen message on action
+* Add # -\*-coding: utf-8 -\*-
+* No goal only commit with gamers and cli
+* No goal only commit
 * Delete bot\_game\_starter.py
 * Add  a lot of games for one run
 * Add statistic

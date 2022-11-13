@@ -1,276 +1,307 @@
 # -*-coding: utf-8 -*-
-import telebot
+
 import logging
-import uuid
-from logging import handlers as log_handlers
+from logging import config as logging_config
 from optparse import OptionParser
-import game_server
-import events
-import gamers
-import texts
-import cli
+import os.path
+import random
+import sys
+import telebot
+import uuid
+
+from archgame import game_server
+from archgame import gamers
+from archgame import texts
+from archgame import cli
+from archgame import constants
 
 
-# Инициализируем логгирование
-def log_init(log_file, log_level):
-    """
-    Function for init log file
-    """
-    logger = logging.getLogger(__name__)
-    # Log Handler. Set logfile
-    chandl = log_handlers.WatchedFileHandler(log_file)
-    # create formatter for log
-    formatter = logging.Formatter(
-        '%(asctime)s %(name)-20s %(levelname)-8s %(message)s')
-    # add formatter to handler
-    chandl.setFormatter(formatter)
-    logger.addHandler(chandl)
-    # Set log level from config
-    logger.setLevel(log_level)
+TRIAL_CMD = 'trial'
+NEW_CMD = 'new'
+RUN_CMD = 'run'
+JOIN_CMD = 'join'
+RESET_CMD = 'reset'
+STATUS_CMD = 'status'
+DEFAULT_USER_NAME = 'Anon'
+
+DEFAULT_CONFIG = {
+    'version': 1,
+    'formatters': {
+        'aardvark': {
+            'datefmt': '%Y-%m-%d,%H:%M:%S',
+            'format': "%(asctime)15s.%(msecs)03d %(processName)s"
+                      " pid:%(process)d tid:%(thread)d %(levelname)s"
+                      " %(name)s:%(lineno)d %(message)s"
+        }
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'aardvark',
+            'stream': 'ext://sys.stdout'
+        },
+    },
+    'loggers': {
+        'archgame': {},
+    },
+    'root': {
+        'level': 'DEBUG',
+        'handlers': ['console']
+    }
+}
 
 
-log_init(
-    './log.log',
-    logging.DEBUG
-)
-log = logging.getLogger(__name__)
+def log_init():
+    logging_config.dictConfig(DEFAULT_CONFIG)
 
-# Парсим входные данные - мы должны сообщить в консоли токен бота
-# с помощью -t
 
-# parser = OptionParser()
-#
-# # Available actions
-# parser.add_option("--log", "-l", dest="logfile", type="string",
-#                   metavar="LOGFILE", default="/var/log/check_flow.log",
-#                   help="path to log file. Default is %default")
-#
-# parser.add_option("--loglevel", dest="loglevel", type="string",
-#                   metavar="LOGLEVEL", default="DEBUG",
-#                   help="path to log file. Default is %default")
-#
-# parser.add_option("--token", "-t", dest="token", type="string",
-#                   default="None",
-#                   help="Telegram token. Default is %default")
-#
-# options, _ = parser.parse_args()
+def parse_cli():
+    parser = OptionParser()
 
-try:
-    global bot
-    # bot = telebot.TeleBot(options.token)
-    bot = telebot.TeleBot("5693443309:AAGtoyO3dYQo9HWRVhC0ZMgqpkupvslWXbY")
-except Exception as err:
-    log.exception('aaaaa, this is exception: %s', err)
+    # # Available actions
+    parser.add_option("--token-file", "-t", dest="token_file", type="string",
+                      default="./token.txt",
+                      help="Path to telegram token file. Default is %default")
+
+    options, _ = parser.parse_args()
+    if not os.path.isfile(options.token_file):
+        print("Not found file with token. Exiting.")
+        sys.exit(1)
+
+    with open(options.token_file) as tfile:
+        token = tfile.read().strip()
+
+    return options, token
+
+
+def _get_random_class():
+    return random.choice(constants.ALL_CLASSES)
+
+
+def _validate_user_class_input(class_text):
+    # Class - Admin
+    if class_text in ['A', 'a', 'А', 'а']:
+        return 'A'
+    # Class - Programmer
+    elif class_text in ['P', 'p', 'П', 'п', 'Р', 'р']:
+        return 'P'
+    # Class - Manager
+    elif class_text in ['M', 'm', 'М', 'м']:
+        return 'M'
+    else:
+        return _get_random_class()
+
+
+def _parse_username_class(text, cmd=TRIAL_CMD):
+    text = text.strip().removeprefix('/' + cmd)
+    splitted_text = text.strip().split()
+    if splitted_text:
+        user_name = splitted_text[0]
+    else:
+        user_name = DEFAULT_USER_NAME
+    if len(splitted_text) > 1:
+        user_class = _validate_user_class_input(splitted_text[1])
+    else:
+        user_class = _get_random_class()
+    return user_name, user_class
 
 
 class GameStorage:
-    def __init__(self):
-        self.dict_gamers = {}
-        self.dict_games = {}
+    def __init__(self, log):
+        self.players = {}
+        self.games = {}
+        self.log = log
 
-    def add_player(self, user_id, name):
-        self.dict_gamers[user_id] = gamers.TelegaGamer(
-            name, user_id, g_cli=cli.TelegramIO(bot, user_id))
+    def has_player(self, user_id):
+        return user_id in self.players
 
-    def get_gamer(self, user_id):
-        return self.dict_gamers[user_id]
+    def has_game(self, game_uuid):
+        return game_uuid in self.games
+
+    def get_player(self, user_id):
+        if self.has_player(user_id):
+            return self.players[user_id]
+        return None
 
     def get_game(self, game_uuid):
-        return self.dict_games[game_uuid]
+        if self.has_game(game_uuid):
+            return self.games[game_uuid]
+        return None
 
-    def create_game(self):
-        num = uuid.uuid4()
-        self.dict_games[num] = []
-        return num
+    def game_started_for_player(self, user_id,
+                                started_game_status=constants.GAME_START_ST):
+        return (self.has_player(user_id) and
+                self.has_game(self.get_player(user_id).game_uuid) and
+                self.get_game(self.get_player(user_id).game_uuid).status ==
+                started_game_status)
 
-    def add_in_game(self, num_game, player):
-        self.dict_games[num_game].append(player)
-        player.game = self.dict_games[num_game]
+    def get_game_for_user(self, user_id):
+        user = self.get_player(user_id)
+        return self.get_game(user.game_uuid)
 
-    def start_game(self, num):
-        game = game_server.GameServer(self.dict_games[num], events.Events())
-        for gamer in self.dict_games[num]:
-            if isinstance(gamer, gamers.TelegaGamer):
-                gamer.add_to_game(game)
-        self.dict_games[num] = game
-        game.main_cycle()
+    def create_game(self, game_owner=None):
+        # For more safety convert uuid to str
+        game_uuid = str(uuid.uuid4())
+        self.games[game_uuid] = game_server.TelegramGameServer(
+            game_uuid, game_owner=game_owner)
+        self.log.info('Create game %s', game_uuid)
+        return game_uuid
+
+    def create_player(self, user_name, user_id, game_uuid, user_class, bot):
+        io = cli.TelegramIO(bot=bot, chat_id=user_id)
+        self.players[user_id] = gamers.TelegaGamer(name=user_name,
+                                                   user_id=user_id,
+                                                   game_uuid=game_uuid,
+                                                   class_per=user_class,
+                                                   g_cli=io)
+        self.log.info('Create player %s with id %s',
+                      self.players[user_id], user_id)
+        return self.players[user_id]
+
+    def add_player_to_game(self, game_uuid, player):
+        self.games[game_uuid].add_gamer(player)
+
+    def start_game(self, game_uuid):
+        self.games[game_uuid].start_game()
+
+    def delete_game(self, game_uuid):
+        if not self.has_game(game_uuid):
+            return
+        self.games.pop(game_uuid)
+        self.log.info('Delete game %s', game_uuid)
+
+    def delete_player(self, user_id):
+        if not self.has_player(user_id):
+            return
+        self.players.pop(user_id)
+        self.log.info('Delete player %s', user_id)
+
+    def force_delete_game(self, game_uuid):
+        # Remove game and all players
+        for player in self.get_game(game_uuid).gamers:
+            self.delete_player(player.user_id)
+        self.delete_game(game_uuid)
+
+    def del_game_on_end(self, game_uuid):
+        if not self.has_game(game_uuid):
+            return
+        if self.get_game(game_uuid).status == constants.GAME_END_ST:
+            self.force_delete_game(game_uuid)
 
 
-global all_telega_data
-all_telega_data = GameStorage()
+def run_trial_game(message, log, bot, storage):
+    cid = message.chat.id
+    log.debug('Get command %s for chat %s', TRIAL_CMD, cid)
+
+    if storage.game_started_for_player(cid):
+        bot.send_message(cid, texts.TELEGRAM_GAME_ALREADY_STARTED)
+        log.debug('User %s already in game', cid)
+        return
+
+    user_name, user_class = _parse_username_class(message.text)
+    log.info('Run trial game for user "%s" with name "%s" and class "%s"',
+             cid, user_name, user_class)
+
+    # Create game and player
+    game_uuid = storage.create_game(game_owner=cid)
+    player = storage.create_player(user_name, cid, game_uuid, user_class, bot)
+    storage.add_player_to_game(game_uuid, player)
+
+    # Create bots for game
+    bot_classes = set(constants.ALL_CLASSES) - set(user_class)
+    for num, bot_class in enumerate(bot_classes):
+        bot_player = gamers.TelegaBot(num, bot_class)
+        log.debug('Add bot %s to game %s', bot_player, game_uuid)
+        storage.add_player_to_game(game_uuid, bot_player)
+
+    # Run game
+    try:
+        storage.start_game(game_uuid)
+    except Exception as err:
+        log.exception("Error in game start for user %s and game %s: %s", cid,
+                      game_uuid, str(err))
 
 
-# Функция, обрабатывающая команду /start
-@bot.message_handler(commands=["start"])
-def start(message, res=False):
-    log.info('Start bot for %d', message.chat.id)
-    bot.send_message(message.chat.id, texts.ASK_NAME_TELEGRAM)
-
-    bot.register_next_step_handler(message, get_name)
-
-
-
-def get_name(message):  # получаем имя и запоминаем его в TelegramServer.users
-    name = message.text.strip()
-    u_id = message.chat.id
-    bot.send_message(message.chat.id, 'Весьма рад тебе, %s!' % name)
-    log.info("Add user " + str(u_id) + " " + name)
-    all_telega_data.add_player(u_id, name)
-    current_message = message
-    bot.register_next_step_handler(current_message, on_user_message)
+def check_user_status(message, log, bot, storage):
+    cid = message.chat.id
+    log.debug('Get command %s for chat %s', STATUS_CMD, cid)
+    if storage.game_started_for_player(cid):
+        bot.send_message(cid, texts.TELEGRAM_GAME_STARTED_STATUS %
+                         storage.get_game_for_user(cid).game_uuid)
+    else:
+        bot.send_message(cid, texts.TELEGRAM_GAME_IDLE_STATUS)
 
 
-def on_user_message(message):
-    current_id = message.chat.id
-    current_gamer = all_telega_data.get_gamer(current_id)
-    status = current_gamer.get_status()
+def reset_user(message, log, bot, storage):
+    cid = message.chat.id
+    log.debug('Get command %s for chat %s', RESET_CMD, cid)
+    if not storage.game_started_for_player(cid):
+        bot.send_message(cid, texts.TELEGRAM_GAME_IDLE_STATUS)
+        return
 
-    log.debug("User %d send message:%s", current_gamer.get_id(), message.text)
-    log.debug("User's %d status:%s", current_gamer.get_id(), status)
+    game = storage.get_game_for_user(cid)
+    if game.game_owner == cid:
+        log.info('Reset game %s for all', game.game_uuid)
+        storage.force_delete_game(game.game_uuid)
+        bot.send_message(
+            cid, texts.TELEGRAM_GAME_RESET_SUCCESS % game.game_uuid)
+    else:
+        bot.send_message(cid, texts.TELEGRAM_GAME_NOT_OWNER % game.game_uuid)
 
-    # Здесь обрабатываются все статусы,
-    # напрямую связанные или подводящие к изменениям GameStorage,
-    # чтобы никуда его дополнительно не передавать и с собой не таскать
-    # В общем, вся начальная развилка выбора варианта игры
-    # до её непосредственного начала
-    if status == "init":
-        text = texts.GAME_OPTIONS
-        bot.send_message(message.from_user.id, text)
-        # current_gamer.create_keyboard(text, {"choose tryplay": "1",
-        #                                      "choose soloplay": "2",
-        #                                      "choose friendsplay": "3"})
-        current_gamer.change_status("answer on init")
-        log.info("Waiting answer on init from user %d" % current_gamer.get_id()
-                 )
-    elif status == "answer on button":
-        pass
-    elif status == "answer on init":
-        num = int(message.text.strip())
-        if num == 1:
-            current_gamer.change_status("tryplay init")
-        if num == 2:
-            current_gamer.change_status("soloplay init")
-        if num == 3:
-            current_gamer.change_status("friendsplay init")
-    elif status == "tryplay init":
-        text = texts.ASK_CLASSES_TELEGRAM
-        bot.send_message(message.from_user.id, text)
-        # current_gamer.create_keyboard(text, {"admin": "Неустрашимый админ!",
-        #                                      "manager": "Всей душой менеджер",
-        #                                      "proger": "Программист."})
-        current_gamer.change_status("answer on tryplay init")
-        log.info(
-            "Waiting for user %d to select a class", current_gamer.get_id())
-    elif status == "answer on tryplay init":
-        text = message.text.strip()
-        if text == "A" or text == "А":
-            current_gamer.set_class("A")
-            current_gamer.change_status("tryplay start")
-            log.info("User %d chose class A" % current_gamer.get_id())
-        if text == "M" or text == "М":
-            current_gamer.set_class("M")
-            current_gamer.change_status("tryplay start")
-            log.info("User %d chose class M" % current_gamer.get_id())
-        if text == "P" or text == "Р":
-            current_gamer.set_class("P")
-            current_gamer.change_status("tryplay start")
-            log.info("User %d chose class P" % current_gamer.get_id())
-    elif status == "tryplay start":
-        num = all_telega_data.create_game()
-        # current_game = all_telega_data.get_game(num)
-        all_telega_data.add_in_game(num, all_telega_data.dict_gamers[current_id])
-        cl_bots = ["A", "M", "P"]
-        cl_bots.remove(current_gamer.get_class())
-        all_telega_data.add_in_game(num, gamers.Bot(1, cl_bots[0], g_cli=cli.BotIO(False)))
-        all_telega_data.add_in_game(num, gamers.Bot(2, cl_bots[1],g_cli=cli.BotIO(False)))
-        all_telega_data.start_game(num)
-    # Пока что не даем выбора подождать, пока придут и напишут в бота другие
-    # люди, хотящие играть не с друзьями, но и не с ботами,
-    # или играть с ботами, сразу ультиматумом ставим с ботами
-    # TODO: в изначальной задумке было не так, но папа сказал: "чё? не успеем."
-    #  надо обсудить
-    elif status == "soloplay init":
-        current_gamer.print_message(texts.ASK_QUANTITY_BOTS)
-        current_gamer.change_status("soloplay start")
-    elif status == "soloplay start":
+
+def handling_user_input(message, log, bot, storage):
+    cid = message.chat.id
+    log.debug('Check input for user %s', cid)
+    if storage.game_started_for_player(cid):
+        user = storage.get_player(cid)
+        game = storage.get_game_for_user(cid)
         try:
-            num = int(message.text.strip())
-            pass  # создать игру на него и на его кол-во ботов
-        except Exception:
-            current_gamer.print_message(texts.ASK_QUANTITY_BOTS + "цифрами, "
-                                        "пожалуйста.")
-    elif status == "friendsplay init":
-        text = texts.FREIENDSPLAY_OPTIONS
-
-        # current_gamer.create_keyboard(text, {"add to game": "Присоединиться",
-        #                                      "create game": "Создать"})
-        current_gamer.change_status("answer on button")
-        log.info("Waiting for user %d to select add to or create game" %
-                 current_gamer.get_id())
-    # если пользователь генерит игру - то создать игру
-    # и выслать ему код игры "Перешли друзьям, с которыми хочешь сыграть,
-    # чтобы они могли к тебе присоединиться"
-    elif status == "create game":
-        num = all_telega_data.create_game()
-        all_telega_data.add_in_game(all_telega_data.get_game(num), current_id)
-        bot.send_message(message.from_user.id, str(num))
-        text = texts.CREATE_GAME
-        # current_gamer.create_keyboard(text, {"start game": "Начать"})
-        current_gamer.change_status("wait friends")
-        log.info("User %d waiting friends to game %d" %
-                 current_gamer.get_id(), num)
-    elif status == "wait friends":
-        pass
-    # если присоединяется - спросить id и добавить его в игру с этим id
-    elif status == "add to game":
-        current_gamer.print_message(texts.ADD_TO_GAME)
-    elif status == "friendsplay start":
-        pass  # создать игру на него и друзей
-    if status == "waiting answer on action":
-        bot.send_message(message.from_user.id, texts.INPUT_ACTION)
-        current_gamer.change_status("answering on action")
-    if status == "answering on action":
-        current_gamer.inpt_str = message.text
-        current_gamer.change_status("answered on action")
-    log.debug("User's %d status:%s", current_gamer.get_id(),
-              current_gamer.get_status())
-    bot.register_next_step_handler(message, on_user_message)
+            user.set_user_input(message.text)
+            game.check_sprint_next_step()
+            storage.del_game_on_end(game.game_uuid)
+        except Exception as err:
+            log.exception("Error in game step for user %s and game %s: %s",
+                          cid, game.game_uuid, str(err))
 
 
-@bot.callback_query_handler(func=lambda call: True)
-def callback_worker(call):
-    current_gamer = all_telega_data.get_gamer(call.message.chat.id)
-    if call.data == "choose tryplay":
-        log.info("User %d chose tryplay" % current_gamer.get_id())
-        current_gamer.change_status("tryplay init")
+def main():
+    opts, token = parse_cli()
+    log_init()
+    log = logging.getLogger(__name__)
+    storage = GameStorage(log=log)
 
-    elif call.data == "admin":
-        current_gamer.set_class("A")
-        current_gamer.change_status("tryplay start")
-        log.info("User %d chose class A" % current_gamer.get_id())
+    try:
+        bot = telebot.TeleBot(token)
+    except Exception as err:
+        log.exception('Fail to init connection to Telegram API: %s', err)
+        sys.exit(1)
 
-    elif call.data == "manager":
-        current_gamer.set_class("M")
-        current_gamer.change_status("tryplay start")
-        log.info("User %d chose class M" % current_gamer.get_id())
+    @bot.message_handler(commands=['start', 'help'])
+    def start(message, res=False):
+        log.debug('Send help to chat "%s"', message.chat.id)
+        bot.send_message(message.chat.id, texts.TELEGRAM_HELP)
 
-    elif call.data == "proger":
-        current_gamer.set_class("P")
-        current_gamer.change_status("tryplay start")
-        log.info("User %d chose class P" % current_gamer.get_id())
+    @bot.message_handler(commands=[TRIAL_CMD])
+    def trial_handler(message, res=False):
+        run_trial_game(message, log, bot, storage)
 
-    elif call.data == "choose soloplay":
-        log.info("User %d chose soloplay" % current_gamer.get_id())
+    @bot.message_handler(commands=[STATUS_CMD])
+    def status_handler(message, res=False):
+        check_user_status(message, log, bot, storage)
 
-    # solo_play если ждем
-    # solo_play не ждем - выбрать количество ботов, отдать эту инфу в ф-цию
+    @bot.message_handler(commands=[RESET_CMD])
+    def reset_handler(message, res=False):
+        reset_user(message, log, bot, storage)
 
-    elif call.data == "choose friendsplay":
-        log.info("User %d chose friendsplay" % current_gamer.get_id())
-        # current_gamer.change_status("wait start friendplay")
-        # bot.register_next_step_handler(friends_play)  # пока просто выбор
-        # кнопка "выбрать игру / присоединиться к существующей"
+    @bot.message_handler(
+        func=lambda msg:
+            storage.get_player(msg.chat.id).status == constants.USER_WAIT_ST)
+    def user_ingame_handler(message):
+        handling_user_input(message, log, bot, storage)
+
+    log.info('Start Telegram API polling')
+    bot.polling(none_stop=True, interval=0)
 
 
-# Запускаем бота
-bot.polling(none_stop=True, interval=0)
+if __name__ == "__main__":
+    main()

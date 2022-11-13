@@ -1,10 +1,11 @@
 # -*-coding: utf-8 -*-
+import logging
 import random
-import telebot
 
 from archgame import obj
 from archgame import cli
 from archgame import constants
+from archgame import texts
 
 
 class InvalidUserInput(Exception):
@@ -26,6 +27,10 @@ class Gamer:
         else:
             # API может выдержать до 3к нагрузки
             self.board.lim_a = constants.LIM_A
+
+    @property
+    def is_bot(self):
+        return False
 
     @property
     def is_cli(self):
@@ -62,7 +67,8 @@ class Gamer:
                             constants.LB))
 
     def set_class(self, cl):
-        self.class_per = cl
+        if cl in constants.ALL_CLASSES:
+            self.class_per = cl
 
     def get_class(self):
         return self.class_per
@@ -102,6 +108,16 @@ class Gamer:
             elif choice != '1':
                 raise InvalidUserInput
 
+    def set_new_users(self, users):
+        self.users = min(
+            (users + self.users),
+            self.board.cap(
+                self.board.quantity_component(constants.API),
+                self.board.quantity_component(constants.DB),
+                self.board.quantity_component(constants.LB)
+            )
+        )
+
     def action(self):
         while True:
             try:
@@ -119,21 +135,11 @@ class Gamer:
                 for i in add_c:
                     component, num = i
                     self.board.change_component(component, num)
-                self.users = min(
-                    (add_u + self.users),
-                    self.board.cap(
-                        self.board.quantity_component(
-                            constants.API),
-                        self.board.quantity_component(
-                            constants.DB),
-                        self.board.quantity_component(
-                            constants.LB)))
+                    self.set_new_users(add_u)
                 return ()
             except InvalidUserInput:
                 self.cli.output_print_msg(
-                    'Некорректный ввод, пожалуйста, попробуйте снова, '
-                    'помните, что на ход вам даётся %d очка' %
-                    self.q_point)
+                    texts.INVALID_USER_INPUT % self.q_point)
 
     def print_message(self, texts):
         self.cli.output_print_msg(texts)
@@ -196,6 +202,10 @@ class Bot(Gamer):
                                   flag_slow_print=flag_slow_print,
                                   g_cli=g_cli)
         self.default_start()
+
+    @property
+    def is_bot(self):
+        return True
 
     # Считает разницу между количеством юзеров и своим капасити
     def users_vs_caps(self):
@@ -333,76 +343,73 @@ class Bot(Gamer):
 
     # Дефолтное расположение, для первого хода бота
     def default_start(self):
-        self.board.change_component("A", 1)
-        self.board.change_component("D", 6)
+        self.board.change_component(constants.API, 1)
+        self.board.change_component(constants.DB, 6)
         # Если это админ, то бэкап ему не нужен, ставим балансер
         if self.is_admin:
-            self.board.change_component("L", 11)
+            self.board.change_component(constants.LB, 11)
         else:
-            self.board.change_component("B", 11)
-        self.board.change_component("A", 16)
+            self.board.change_component(constants.BACKUP, 11)
+        self.board.change_component(constants.API, 16)
+
+
+class TelegaBot(Bot):
+    def __init__(self, num, cl, flag_slow_print=False, g_cli=None):
+        super(TelegaBot, self).__init__(
+            num=num,
+            cl=cl,
+            flag_slow_print=flag_slow_print,
+            g_cli=g_cli or cli.BotIO(False)
+        )
+        self.status = "ready"
+        self.user_id = None
+        self.game_uuid = None
 
 
 class TelegaGamer(Gamer):
-    def __init__(self, name, user_id, class_per="", game="",
+    def __init__(self, name, user_id, game_uuid, class_per="",
                  flag_slow_print=False, g_cli=None):
         super(TelegaGamer, self).__init__(name,
                                           class_per=class_per,
                                           flag_slow_print=flag_slow_print,
                                           g_cli=g_cli)
         self.user_id = user_id
-        self.game = game
-        # Начальное состояние
-        # про игрока ещё ничего неизвестно
-        self.status = "init"
-        self.input_str = ""
+        self.game_uuid = game_uuid
+        self._status = constants.USER_INIT_ST
+        self.log = logging.getLogger(__name__)
 
-    def get_status(self):
-        return self.status
+    @property
+    def status(self):
+        return self._status
 
-    def get_id(self):
-        return self.user_id
+    def set_status(self, new_status):
+        self.log.debug('Set status %s for user %s', new_status, self.user_id)
+        self._status = new_status
 
-    def change_status(self, new_status):
-        self.status = new_status
+    def set_user_input(self, text):
+        if self.status == constants.USER_WAIT_ST:
+            self.action(text)
 
-    def add_to_game(self, game):
-        self.game = game
-
-    def create_keyboard(self, message_text, buttons):
-        self.cli.create_keyboard(message_text, buttons)
-
-    def action(self):
-        self.status = "waiting answer on action"
-        self.input_str = ""
-        while True:
-            try:
-                if self.status == "answered on action":
-                    choices = self.input_str.split(',')
-                    self.validate_input_user(choices)
-                    ans = [0, []]
-                    for i in choices:
-                        if i[0] == "1":  # добавить юзеров
-                            ans[0] += 1
-                        if i[0] == "2":  # добавить компонент
-                            two, comp, number = i.strip().split("-")
-                            ans[1].append([comp, int(number)])
-                    add_u, add_c = ans
-                    for i in add_c:
-                        component, num = i
-                        self.board.change_component(component, num)
-                    self.users = min(
-                        (add_u + self.users),
-                        self.board.cap(
-                            self.board.quantity_component(
-                                constants.API),
-                            self.board.quantity_component(
-                                constants.DB),
-                            self.board.quantity_component(
-                                constants.LB)))
-                    return ()
-            except InvalidUserInput:
-                self.cli.output_print_msg(
-                    'Некорректный ввод, пожалуйста, попробуйте снова, '
-                    'помните, что на ход вам даётся %d очка' %
-                    self.q_point)
+    def action(self, text):
+        self.log.debug('Working with user %s input: "%s"', self.user_id, text)
+        try:
+            choices = text.split(',')
+            self.validate_input_user(choices)
+            ans = [0, []]
+            for i in choices:
+                if i[0] == "1":  # добавить юзеров
+                    ans[0] += 1
+                if i[0] == "2":  # добавить компонент
+                    two, comp, number = i.strip().split("-")
+                    ans[1].append([comp, int(number)])
+            add_u, add_c = ans
+            for i in add_c:
+                component, num = i
+                self.board.change_component(component, num)
+            self.set_new_users(add_u)
+            self.set_status(constants.USER_READY_ST)
+        except InvalidUserInput:
+            self.log.debug('Found invalid user input for %s: "%s"',
+                           self.user_id, text)
+            self.cli.output_print_msg(
+                texts.INVALID_USER_INPUT % self.q_point)

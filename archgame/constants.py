@@ -1,3 +1,4 @@
+# -*-coding: utf-8 -*-
 TEST = False
 WIN_SCORE = 7  # До какого спринта играем
 if TEST:
@@ -7,6 +8,9 @@ if TEST:
 FIRST_SPRINT_POINTS = 4
 LIM_POINTS = 2  # Очки на один ход
 BANKRUPT_POINTS = LIM_POINTS // 2  # количество очков на ход при банкротстве
+
+# Возможные классы игроков
+ALL_CLASSES = ['A', 'M', 'P']
 
 # Обозначения игровых элементов
 API = "A"
@@ -26,3 +30,13 @@ LIM_L = 3  # LB может обслуживать не больше 3х API
 LIM_B = 2
 
 SIZE_BOARD = 4  # ширина и высота квадратного игрового поля
+
+# Статусы для класса TelegaGamer
+USER_INIT_ST = "init"
+USER_WAIT_ST = "waiting"
+USER_READY_ST = "ready"
+
+# Статусы для класса TelegramGameServer
+GAME_INIT_ST = "prepare"
+GAME_START_ST = "started"
+GAME_END_ST = "ended"
