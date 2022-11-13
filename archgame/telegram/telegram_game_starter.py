@@ -93,7 +93,7 @@ def _validate_user_class_input(class_text):
 
 
 def _parse_username_class(text, cmd=TRIAL_CMD):
-    text = text.strip().removeprefix('/' + cmd)
+    text = text.strip().replace('/' + cmd, '')
     splitted_text = text.strip().split()
     if splitted_text:
         user_name = splitted_text[0]
