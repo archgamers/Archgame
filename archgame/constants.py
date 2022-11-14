@@ -10,7 +10,10 @@ LIM_POINTS = 2  # Очки на один ход
 BANKRUPT_POINTS = LIM_POINTS // 2  # количество очков на ход при банкротстве
 
 # Возможные классы игроков
-ALL_CLASSES = ['A', 'M', 'P']
+MANAGER_CLASS = 'M'
+PROGRAMMER_CLASS = 'P'
+ADMIN_CLASS = 'A'
+ALL_CLASSES = [MANAGER_CLASS, PROGRAMMER_CLASS, ADMIN_CLASS]
 
 # Обозначения игровых элементов
 API = "A"
@@ -33,10 +36,13 @@ SIZE_BOARD = 4  # ширина и высота квадратного игров
 
 # Статусы для класса TelegaGamer
 USER_INIT_ST = "init"
+USER_JOIN_ST = "joining"
 USER_WAIT_ST = "waiting"
 USER_READY_ST = "ready"
 
 # Статусы для класса TelegramGameServer
 GAME_INIT_ST = "prepare"
+GAME_WAIT_ST = "waiting"
 GAME_START_ST = "started"
 GAME_END_ST = "ended"
+GAME_STARTED = {GAME_START_ST, GAME_WAIT_ST}

@@ -94,7 +94,9 @@ def _validate_user_class_input(class_text):
 
 
 def _parse_username_class(text, cmd=TRIAL_CMD):
-    text = text.strip().replace('/' + cmd, '')
+    text = text.strip()
+    if cmd:
+        text = text.replace('/' + cmd, '')
     splitted_text = text.strip().split()
     if splitted_text:
         user_name = splitted_text[0]
@@ -116,6 +118,13 @@ class GameStorage:
     def has_player(self, user_id):
         return user_id in self.players
 
+    def player_status_is(self, user_id, status):
+        if not self.has_player(user_id):
+            return False
+        if isinstance(status, set):
+            return self.get_player(user_id).status in status
+        return self.get_player(user_id).status == status
+
     def has_game(self, game_uuid):
         return game_uuid in self.games
 
@@ -130,11 +139,11 @@ class GameStorage:
         return None
 
     def game_started_for_player(self, user_id,
-                                started_game_status=constants.GAME_START_ST):
+                                started_game_statuses=constants.GAME_STARTED):
         return (self.has_player(user_id) and
                 self.has_game(self.get_player(user_id).game_uuid) and
-                self.get_game(self.get_player(user_id).game_uuid).status ==
-                started_game_status)
+                self.get_game(self.get_player(user_id).game_uuid).status in
+                started_game_statuses)
 
     def get_game_for_user(self, user_id):
         user = self.get_player(user_id)
@@ -190,16 +199,22 @@ class GameStorage:
             self.force_delete_game(game_uuid)
 
 
+def out_user_name_class(cid, name, user_class, bot=None):
+    class_hum = texts.CLASSES_USER_READABLE[user_class]
+    bot.send_message(cid, texts.TELEGRAM_USER_INFO % (name, class_hum))
+
+
 def run_trial_game(message, log, bot, storage):
     cid = message.chat.id
     log.debug('Get command %s for chat %s', TRIAL_CMD, cid)
 
     if storage.game_started_for_player(cid):
         bot.send_message(cid, texts.TELEGRAM_GAME_ALREADY_STARTED)
-        log.debug('User %s already in game', cid)
+        log.debug('User %s already in game, but want trial game', cid)
         return
 
     user_name, user_class = _parse_username_class(message.text)
+    out_user_name_class(cid, user_name, user_class, bot)
     log.info('Run trial game for user "%s" with name "%s" and class "%s"',
              cid, user_name, user_class)
 
@@ -223,12 +238,110 @@ def run_trial_game(message, log, bot, storage):
                       game_uuid, str(err))
 
 
+def create_new_game(message, log, bot, storage):
+    cid = message.chat.id
+    log.debug('Get command %s for chat %s', NEW_CMD, cid)
+
+    if storage.game_started_for_player(cid):
+        bot.send_message(cid, texts.TELEGRAM_GAME_ALREADY_STARTED)
+        log.debug('User %s already in game, but want new game', cid)
+        return
+
+    user_name, user_class = _parse_username_class(message.text, cmd=NEW_CMD)
+    out_user_name_class(cid, user_name, user_class, bot)
+    log.info('Run new game for user "%s" with name "%s" and class "%s"',
+             cid, user_name, user_class)
+
+    game_uuid = storage.create_game(game_owner=cid)
+    player = storage.create_player(user_name, cid, game_uuid, user_class, bot)
+    storage.add_player_to_game(game_uuid, player)
+
+    # Inform user about created game
+    bot.send_message(cid, texts.TELEGRAM_GAME_CREATED)
+    bot.send_message(cid, game_uuid)
+
+    # Switch game_server to waiting status
+    # Game in this status is considered running
+    storage.get_game(game_uuid).set_status(constants.GAME_WAIT_ST)
+
+
+def run_created_game(message, log, bot, storage):
+    cid = message.chat.id
+    log.debug('Get command %s for chat %s', RUN_CMD, cid)
+
+    if storage.game_started_for_player(cid):
+        game = storage.get_game_for_user(cid)
+        if game.game_owner == cid and game.status == constants.GAME_WAIT_ST:
+            try:
+                storage.start_game(game.game_uuid)
+            except Exception as err:
+                log.exception(
+                    "Error in game start for user %s and game %s: %s",
+                    cid, game.game_uuid, str(err)
+                )
+        else:
+            log.debug('User %s want to run not owned game', cid)
+            bot.send_message(cid, texts.TELEGRAM_START_FORBIDEN)
+    else:
+        bot.send_message(cid, texts.TELEGRAM_GAME_NOT_STARTED)
+        log.debug('User %s want to run game, but game not found', cid)
+
+
+def join_in_game(message, log, bot, storage):
+    cid = message.chat.id
+    log.debug('Get command %s for chat %s', JOIN_CMD, cid)
+
+    if storage.game_started_for_player(cid):
+        bot.send_message(cid, texts.TELEGRAM_GAME_ALREADY_STARTED)
+        log.debug(
+            'User %s already in game, but want join to another game', cid)
+        return
+
+    user_name, user_class = _parse_username_class(message.text, cmd=JOIN_CMD)
+    out_user_name_class(cid, user_name, user_class, bot)
+    log.info('Join to game user "%s" with name "%s" and class "%s"',
+             cid, user_name, user_class)
+
+    # Create player without game
+    player = storage.create_player(user_name, cid, None, user_class, bot)
+    # Swith player to join status
+    player.set_status(constants.USER_JOIN_ST)
+    bot.send_message(cid, texts.TELEGRAM_JOIN_INFO)
+
+
+def join_input_game(message, log, bot, storage):
+    cid = message.chat.id
+    game_uuid = message.text
+    log.debug('User %s trying join game %s', cid, game_uuid)
+    if (storage.has_game(game_uuid) and
+            storage.get_game(game_uuid).status not in constants.GAME_STARTED):
+        # Add player to game
+        player = storage.get_player(cid)
+        storage.add_player_to_game(game_uuid, player)
+        # Reset the user state to the original for the normal operation of the
+        # /reset and /status command
+        player.set_status(constants.USER_INIT_ST)
+    else:
+        bot.send_message(cid, texts.TELEGRAM_JOIN_GAME_FAIL % game_uuid)
+        bot.send_message(cid, texts.TELEGRAM_JOIN_INFO)
+
+
 def check_user_status(message, log, bot, storage):
     cid = message.chat.id
     log.debug('Get command %s for chat %s', STATUS_CMD, cid)
     if storage.game_started_for_player(cid):
+        game = storage.get_game_for_user(cid)
         bot.send_message(cid, texts.TELEGRAM_GAME_STARTED_STATUS %
-                         storage.get_game_for_user(cid).game_uuid)
+                         game.game_uuid)
+        bot.send_message(cid, texts.TELEGRAM_STATUS_PLAYERS_INTRO)
+        # Show info about another players
+        for player in game.gamers:
+            status = texts.TELEGRAM_USER_STATUS_HUMAN_READABLE[player.status]
+            user_class = texts.CLASSES_USER_READABLE[player.class_per]
+            bot.send_message(cid, texts.TELEGRAM_STATUS_PLAYER_INFO %
+                             (player.name, user_class, status))
+    elif storage.player_status_is(cid, constants.USER_JOIN_ST):
+        bot.send_message(cid, texts.TELEGRAM_JOIN_INFO)
     else:
         bot.send_message(cid, texts.TELEGRAM_GAME_IDLE_STATUS)
 
@@ -236,6 +349,13 @@ def check_user_status(message, log, bot, storage):
 def reset_user(message, log, bot, storage):
     cid = message.chat.id
     log.debug('Get command %s for chat %s', RESET_CMD, cid)
+
+    if storage.player_status_is(cid, constants.USER_JOIN_ST):
+        log.debug('Get reset for joining player %s', cid)
+        storage.delete_player(storage.get_player(cid).user_id)
+        bot.send_message(cid, texts.TELEGRAM_JOIN_GAME_RESET)
+        return
+
     if not storage.game_started_for_player(cid):
         bot.send_message(cid, texts.TELEGRAM_GAME_IDLE_STATUS)
         return
@@ -247,10 +367,11 @@ def reset_user(message, log, bot, storage):
         bot.send_message(
             cid, texts.TELEGRAM_GAME_RESET_SUCCESS % game.game_uuid)
     else:
+        # TODO: Allow the user to exit someone else's game
         bot.send_message(cid, texts.TELEGRAM_GAME_NOT_OWNER % game.game_uuid)
 
 
-def handling_user_input(message, log, bot, storage):
+def handling_ingame_input(message, log, bot, storage):
     cid = message.chat.id
     log.debug('Check input for user %s', cid)
     if storage.game_started_for_player(cid):
@@ -295,17 +416,36 @@ def main():
     def status_handler(message, res=False):
         check_user_status(message, log, bot, storage)
 
+    @bot.message_handler(commands=[NEW_CMD])
+    def new_handler(message, res=False):
+        create_new_game(message, log, bot, storage)
+
+    @bot.message_handler(commands=[RUN_CMD])
+    def run_handler(message, res=False):
+        run_created_game(message, log, bot, storage)
+
     @bot.message_handler(commands=[RESET_CMD])
     def reset_handler(message, res=False):
         reset_user(message, log, bot, storage)
 
+    @bot.message_handler(commands=[JOIN_CMD])
+    def join_handler(message, res=False):
+        join_in_game(message, log, bot, storage)
+
     @bot.message_handler(
         func=lambda msg:
-            storage.get_player(msg.chat.id).status == constants.USER_WAIT_ST)
+            storage.player_status_is(msg.chat.id, constants.USER_JOIN_ST))
+    def user_join_handler(message):
+        join_input_game(message, log, bot, storage)
+
+    @bot.message_handler(
+        func=lambda msg:
+            storage.player_status_is(msg.chat.id, constants.USER_WAIT_ST))
     def user_ingame_handler(message):
-        handling_user_input(message, log, bot, storage)
+        handling_ingame_input(message, log, bot, storage)
 
     log.info('Start Telegram API polling')
+    # Restart on error and not reset storage
     while True:
         try:
             bot.polling(none_stop=True, interval=0)
