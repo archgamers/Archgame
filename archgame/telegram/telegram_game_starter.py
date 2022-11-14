@@ -300,7 +300,11 @@ def main():
         handling_user_input(message, log, bot, storage)
 
     log.info('Start Telegram API polling')
-    bot.polling(none_stop=True, interval=0)
+    while True:
+        try:
+            bot.polling(none_stop=True, interval=0)
+        except Exception as err:
+            log.exception('Error connection to Telegram API: %s', err)
 
 
 if __name__ == "__main__":
