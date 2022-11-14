@@ -16,6 +16,7 @@ from archgame import cli
 from archgame import constants
 
 
+RULES_CMD = 'rules'
 TRIAL_CMD = 'trial'
 NEW_CMD = 'new'
 RUN_CMD = 'run'
@@ -277,9 +278,14 @@ def main():
         sys.exit(1)
 
     @bot.message_handler(commands=['start', 'help'])
-    def start(message, res=False):
+    def start_handler(message, res=False):
         log.debug('Send help to chat "%s"', message.chat.id)
         bot.send_message(message.chat.id, texts.TELEGRAM_HELP)
+
+    @bot.message_handler(commands=[RULES_CMD])
+    def rules_handler(message, res=False):
+        log.debug('Send rules to chat "%s"', message.chat.id)
+        bot.send_message(message.chat.id, texts.TELEGRAM_RULES)
 
     @bot.message_handler(commands=[TRIAL_CMD])
     def trial_handler(message, res=False):

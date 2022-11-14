@@ -1,6 +1,9 @@
 CHANGES
 =======
 
+* Fix daemon crash on api.telegram.org read timed out
+* Remove python 3.9 only methods
+* Fix telegram starter
 * Without buttons, it doesn't work correctly too, the problem wasn't with the buttons
 * With buttons, the buttons don't work correctly, but they are. All texts were moved to text.py Bot don't work, because can't listen message on action
 * Add # -\*-coding: utf-8 -\*-
