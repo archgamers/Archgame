@@ -98,7 +98,7 @@ TELEGRAM_GAME_IDLE_STATUS = "Вы сейчас не играете ни в од�
 TELEGRAM_GAME_RESET_SUCCESS = "Игра %s завершена."
 TELEGRAM_GAME_NOT_OWNER = ("Вы не можете сбросить игру %s, поскольку не "
                            "являтесь ее владельцем")
-TELEGRAM_STATUS_PLAYERS_INTRO = "Вместе с вами играют:"
+TELEGRAM_STATUS_PLAYERS_INTRO = "В эту игру играют:"
 TELEGRAM_STATUS_PLAYER_INFO = "Игрок %s с классом %s находится в статусе: %s"
 TELEGRAM_USER_STATUS_HUMAN_READABLE = {
     constants.USER_INIT_ST: "Ожидает начала игры",

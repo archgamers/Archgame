@@ -314,14 +314,17 @@ def join_input_game(message, log, bot, storage):
     game_uuid = message.text
     log.debug('User %s trying join game %s', cid, game_uuid)
     if (storage.has_game(game_uuid) and
-            storage.get_game(game_uuid).status not in constants.GAME_STARTED):
+            storage.get_game(game_uuid).status == constants.GAME_WAIT_ST):
         # Add player to game
         player = storage.get_player(cid)
         storage.add_player_to_game(game_uuid, player)
         # Reset the user state to the original for the normal operation of the
         # /reset and /status command
         player.set_status(constants.USER_INIT_ST)
+        bot.send_message(cid, texts.TELEGRAM_GAME_STARTED_STATUS % game_uuid)
     else:
+        log.debug('Game %s for user %s not found. Games avail: %s',
+                  game_uuid, cid, storage.games.keys())
         bot.send_message(cid, texts.TELEGRAM_JOIN_GAME_FAIL % game_uuid)
         bot.send_message(cid, texts.TELEGRAM_JOIN_INFO)
 

@@ -34,7 +34,7 @@ class Gamer:
 
     @property
     def is_cli(self):
-        if isinstance(self.cli, cli.Cli):
+        if type(self.cli) == cli.Cli:
             return True
         return False
 

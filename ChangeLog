@@ -1,6 +1,7 @@
 CHANGES
 =======
 
+* Add /new, /run, /join commands and some fixes in texts
 * Add rules command
 * Fix daemon crash on api.telegram.org read timed out
 * Remove python 3.9 only methods
