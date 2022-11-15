@@ -1,0 +1,40 @@
+CHANGES
+=======
+
+* Add /new, /run, /join commands and some fixes in texts
+* Add rules command
+* Fix daemon crash on api.telegram.org read timed out
+* Remove python 3.9 only methods
+* Fix telegram starter
+* Without buttons, it doesn't work correctly too, the problem wasn't with the buttons
+* With buttons, the buttons don't work correctly, but they are. All texts were moved to text.py Bot don't work, because can't listen message on action
+* Add # -\*-coding: utf-8 -\*-
+* No goal only commit with gamers and cli
+* No goal only commit
+* Delete bot\_game\_starter.py
+* Add  a lot of games for one run
+* Add statistic
+* Add logic for botgamers
+* Add basic structure for botgamers
+* Redesigned the architecture of the code, make pep8 happy, rename classes\_gamers.py to gamers.py and some other things, TEST mode is disabled
+* Fix winners' print, make tests happy
+* Fix winners' print
+* Make pep8 happy, rename bags to bugs
+* Add basic CI
+* add usual boilerplate + initial tox.ini + test example
+* Use usual directory structure for python project
+* Fix events texts
+* Add classes' benefit for admins Add first sprint Add TEST flag for debug
+* Add classes' benefit
+* Add input player's classes
+* cli output: some animations
+* Events: new texts
+* Use classes for events
+* Add event's runner
+* version 1.2
+* version 1.1
+* version 1.0
+* add events examples
+* Добавила папку с кодом, загрузила туда пока что только main.py с hello, world
+* Добавила пример того, как будет выглядеть игра, от Саши
+* Initial commit

@@ -27,7 +27,7 @@ class BaseEvent(object):
         #   output string.
         raise NotImplementedError()
 
-    def act(self, gamers, num):
+    def act(self, gamers, num, output_func=None):
         result = self.apply(gamers, num)
         response = [gamers[num].name + ":", self.random_long_text]
         if result is None:
@@ -35,7 +35,10 @@ class BaseEvent(object):
         else:
             response.append(self.short_text % result
                             if result is not True else self.short_text)
-        gamers[num].input_message(response)
+        if output_func:
+            output_func(response)
+        else:
+            gamers[num].input_message(response)
 
 
 # убрать бэкап, если есть, нет - 0 u
@@ -367,10 +370,10 @@ class Events:
         random.shuffle(self.events)
         return self.events
 
-    def random_event(self, gamers, num):
+    def random_event(self, gamers, num, ouput_func=None):
         try:
             random_ev = self.events.pop()
         except IndexError:
             self.events = self.refill_events()
             random_ev = self.events.pop()
-        random_ev().act(gamers, num)
+        random_ev().act(gamers, num, output_func=ouput_func)

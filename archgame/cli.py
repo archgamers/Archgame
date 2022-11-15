@@ -1,3 +1,4 @@
+# -*-coding: utf-8 -*-
 import sys
 import time
 
@@ -91,3 +92,22 @@ class EmptyIO(Cli):
                     statistics[c][2][0],
                     statistics[c][2][1],
                     statistics[c][2][2]))
+
+
+class TelegramIO(Cli):
+    def __init__(self, bot, chat_id):
+        super(TelegramIO, self).__init__(False)
+        self.slow_print = False
+        self.bot = bot
+        self.chat_id = chat_id
+
+    def output_input_msg(self, text):
+        if not self.slow_print:
+            self.bot.send_message(self.chat_id, "".join(text))
+            return
+
+        for line in text:
+            self.bot.send_message(self.chat_id, line)
+
+    def output_print_msg(self, text):
+        self.output_input_msg(text)
