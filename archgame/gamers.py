@@ -102,7 +102,7 @@ class Gamer:
                 num_cell = int(num_cell)
                 if component not in constants.POSSIBLE_INPUTS:
                     raise InvalidUserInput
-                if 0 > num_cell or num_cell > constants.SIZE_BOARD ** 2 + 1:
+                if 0 > num_cell or num_cell > (constants.SIZE_BOARD ** 2):
                     raise InvalidUserInput
 
             elif choice != '1':
