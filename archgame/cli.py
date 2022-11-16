@@ -1,9 +1,11 @@
 # -*-coding: utf-8 -*-
 import sys
 import time
+import telebot
 
 from archgame import texts
 from archgame import constants
+from telebot import formatting
 
 input_speed = {
     '\n': 0.5,
@@ -103,7 +105,9 @@ class TelegramIO(Cli):
 
     def output_input_msg(self, text):
         if not self.slow_print:
-            self.bot.send_message(self.chat_id, "".join(text))
+            self.bot.send_message(self.chat_id,
+                                  formatting.format_text("".join(text)),
+                                  parse_mode='HTML')
             return
 
         for line in text:

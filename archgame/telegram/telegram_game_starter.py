@@ -390,7 +390,8 @@ def handling_ingame_input(message, log, bot, storage):
 
 
 def main():
-    opts, token = parse_cli()
+    # opts, token = parse_cli()
+    opts, token = ["", "5717283892:AAGwLHlDu5-gYAA00W6FsyZiajJtx2VlpTU"]
     log_init()
     log = logging.getLogger(__name__)
     storage = GameStorage(log=log)
