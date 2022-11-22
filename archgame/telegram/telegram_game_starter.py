@@ -15,6 +15,8 @@ from archgame import texts
 from archgame import cli
 from archgame import constants
 
+# TODO: починить ходы ботов(сейчас оне не совершают ход, но игра продолжается),
+#  уменьшить количество сообщений
 
 RULES_CMD = 'rules'
 TRIAL_CMD = 'trial'
@@ -159,7 +161,10 @@ class GameStorage:
 
     def create_player(self, user_name, user_id, game_uuid, user_class, bot):
         io = cli.TelegramIO(bot=bot, chat_id=user_id)
-        self.players[user_id] = gamers.TelegaGamer(name=user_name,
+        new_user_name = user_name
+        if len(new_user_name) > (constants.LIM_LEN_NAME+1):
+            new_user_name = new_user_name[:constants.LIM_LEN_NAME] + "~"
+        self.players[user_id] = gamers.TelegaGamer(name=new_user_name,
                                                    user_id=user_id,
                                                    game_uuid=game_uuid,
                                                    class_per=user_class,
@@ -218,10 +223,8 @@ def run_trial_game(message, log, bot, storage):
     log.info('Run trial game for user "%s" with name "%s" and class "%s"',
              cid, user_name, user_class)
 
-    # Create game and player
+    # Create game
     game_uuid = storage.create_game(game_owner=cid)
-    player = storage.create_player(user_name, cid, game_uuid, user_class, bot)
-    storage.add_player_to_game(game_uuid, player)
 
     # Create bots for game
     bot_classes = set(constants.ALL_CLASSES) - set(user_class)
@@ -229,6 +232,10 @@ def run_trial_game(message, log, bot, storage):
         bot_player = gamers.TelegaBot(num, bot_class)
         log.debug('Add bot %s to game %s', bot_player, game_uuid)
         storage.add_player_to_game(game_uuid, bot_player)
+
+    # Create player
+    player = storage.create_player(user_name, cid, game_uuid, user_class, bot)
+    storage.add_player_to_game(game_uuid, player)
 
     # Run game
     try:
@@ -390,8 +397,7 @@ def handling_ingame_input(message, log, bot, storage):
 
 
 def main():
-    # opts, token = parse_cli()
-    opts, token = ["", "5717283892:AAGwLHlDu5-gYAA00W6FsyZiajJtx2VlpTU"]
+    opts, token = parse_cli()
     log_init()
     log = logging.getLogger(__name__)
     storage = GameStorage(log=log)

@@ -9,6 +9,10 @@ FIRST_SPRINT_POINTS = 4
 LIM_POINTS = 2  # Очки на один ход
 BANKRUPT_POINTS = LIM_POINTS // 2  # количество очков на ход при банкротстве
 
+SEPARATOR = " "
+SEPARATOR_COMPONENTS = "-"
+LIM_LEN_NAME = 6
+
 # Возможные классы игроков
 MANAGER_CLASS = 'M'
 PROGRAMMER_CLASS = 'P'
@@ -21,7 +25,9 @@ DB = "D"
 LB = "L"
 BACKUP = "B"
 EMPTY_CELL = " "
-POSSIBLE_INPUTS = [API, DB, LB, BACKUP]
+POSSIBLE_INPUT_COMPONENTS = [API, DB, LB, BACKUP, "a", "d", "l", "b"]
+CMD_INPUT_USER = ["1", "U", "u"]
+CMD_INPUT_SERVICE = ["2", "s", "S"]
 
 # Компоненты/сервисы
 LIM_A = 3  # API может выдержать до 3к нагрузки
