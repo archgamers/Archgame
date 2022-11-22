@@ -10,7 +10,8 @@ ASK_CLASSES = """\
     krps каждая
 А - Админ, неустрашим - в его кармане всегда есть флешка с продом, backup
     встроенный, не падает DB ни при каких обстоятельствах"""
-ASK_NAME = "Введите имя и класс игрока(через запятую) %d "
+ASK_NAME = "Введите имя и класс игрока %d(через '{0}') ".format(
+    constants.SEPARATOR)
 
 CLASSES_USER_READABLE = {
     constants.MANAGER_CLASS: 'Менеджер',

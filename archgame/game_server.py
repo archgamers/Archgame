@@ -124,6 +124,26 @@ class TelegramGameServer(GameServer):
     def game_uuid(self):
         return self._uuid
 
+    def print_boards(self):
+        all_triple = []
+        acc = 0
+        triple = []
+        for gamer in self.gamers:
+            triple += [gamer.print_board()]
+            if acc == 3:
+                all_triple.append(triple)
+                acc = 0
+                triple = []
+        if len(triple) > 0:
+            all_triple.append(triple)
+
+        text = ""
+        for triple in all_triple:
+            for first_line_all_boards in zip(*triple):
+                text += ("".join(first_line_all_boards).strip()) + "\n"
+
+        self.print_all("<pre>" + text + "</pre>")
+
     def set_status(self, new_status):
         self.log.debug('Set status %s for game %s', new_status, self.game_uuid)
         self._status = new_status

@@ -66,6 +66,16 @@ class Gamer:
                         self.board.quantity_component(
                             constants.LB))
 
+    def default_component_name(self, comp):
+        if comp in ["A", "a"]:
+            return constants.API
+        if comp in ["D", "d"]:
+            return constants.DB
+        if comp in ["L", "l"]:
+            return constants.LB
+        if comp in ["B", "b"]:
+            return constants.BACKUP
+
     def set_class(self, cl):
         if cl in constants.ALL_CLASSES:
             self.class_per = cl
@@ -91,21 +101,23 @@ class Gamer:
     def validate_input_user(self, choices):
         if len(choices) != self.q_point:
             raise InvalidUserInput
-        for choice in choices:
-            if '-' in choice:
-                input_list = choice.split('-')
+        for orig_choice in choices:
+            choice = orig_choice.strip(constants.SEPARATOR)
+            if constants.SEPARATOR_COMPONENTS in choice:
+                input_list = choice.split(constants.SEPARATOR_COMPONENTS)
                 if len(input_list) != 3:
                     raise InvalidUserInput
-                _, component, num_cell = choice.split('-')
+                _, component, num_cell = choice.split(
+                    constants.SEPARATOR_COMPONENTS)
                 if not num_cell.isdigit():
                     raise InvalidUserInput
                 num_cell = int(num_cell)
-                if component not in constants.POSSIBLE_INPUTS:
+                if component not in constants.POSSIBLE_INPUT_COMPONENTS:
                     raise InvalidUserInput
-                if 0 > num_cell or num_cell > constants.SIZE_BOARD ** 2 + 1:
+                if 0 > num_cell or num_cell > (constants.SIZE_BOARD ** 2):
                     raise InvalidUserInput
 
-            elif choice != '1':
+            elif choice not in constants.CMD_INPUT_USER:
                 raise InvalidUserInput
 
     def set_new_users(self, users):
@@ -122,20 +134,24 @@ class Gamer:
         while True:
             try:
                 input_str = self.cli.ask(self.name)
-                choices = input_str.split(',')
+                choices = input_str.split(constants.SEPARATOR)
                 self.validate_input_user(choices)
                 ans = [0, []]
                 for i in choices:
-                    if i[0] == "1":  # добавить юзеров
+                    # добавить юзеров
+                    if i[0] in constants.CMD_INPUT_USER:
                         ans[0] += 1
-                    if i[0] == "2":  # добавить компонент
-                        two, comp, number = i.strip().split("-")
-                        ans[1].append([comp, int(number)])
+                    # добавить компонент
+                    if i[0] in constants.CMD_INPUT_SERVICE:
+                        two, comp, number = i.strip().split(
+                            constants.SEPARATOR_COMPONENTS)
+                        ans[1].append([self.default_component_name(comp),
+                                       int(number)])
                 add_u, add_c = ans
                 for i in add_c:
                     component, num = i
                     self.board.change_component(component, num)
-                    self.set_new_users(add_u)
+                self.set_new_users(add_u)
                 return ()
             except InvalidUserInput:
                 self.cli.output_print_msg(
@@ -393,15 +409,17 @@ class TelegaGamer(Gamer):
     def action(self, text):
         self.log.debug('Working with user %s input: "%s"', self.user_id, text)
         try:
-            choices = text.split(',')
+            choices = text.split(constants.SEPARATOR)
             self.validate_input_user(choices)
             ans = [0, []]
             for i in choices:
-                if i[0] == "1":  # добавить юзеров
+                if i[0] in constants.CMD_INPUT_USER:  # добавить юзеров
                     ans[0] += 1
-                if i[0] == "2":  # добавить компонент
-                    two, comp, number = i.strip().split("-")
-                    ans[1].append([comp, int(number)])
+                if i[0] in constants.CMD_INPUT_SERVICE:  # добавить компонент
+                    two, comp, number = i.strip().split(
+                        constants.SEPARATOR_COMPONENTS)
+                    ans[1].append([self.default_component_name(comp),
+                                   int(number)])
             add_u, add_c = ans
             for i in add_c:
                 component, num = i
