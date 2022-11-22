@@ -1,6 +1,10 @@
 CHANGES
 =======
 
+* release of the console version: safe input in the starter, less explanations - less text, introduced constants of separators, you can now enter actions and so too "u s-a-15" or "U S-A-15"
+* Fix print\_boards
+* Fix something in console version
+* Fix game joining and print\_all
 * Add /new, /run, /join commands and some fixes in texts
 * Add rules command
 * Fix daemon crash on api.telegram.org read timed out

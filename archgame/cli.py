@@ -1,7 +1,6 @@
 # -*-coding: utf-8 -*-
 import sys
 import time
-import telebot
 
 from archgame import texts
 from archgame import constants

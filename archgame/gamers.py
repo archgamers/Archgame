@@ -76,7 +76,6 @@ class Gamer:
         if comp in ["B", "b"]:
             return constants.BACKUP
 
-
     def set_class(self, cl):
         if cl in constants.ALL_CLASSES:
             self.class_per = cl
@@ -139,9 +138,11 @@ class Gamer:
                 self.validate_input_user(choices)
                 ans = [0, []]
                 for i in choices:
-                    if i[0] in constants.CMD_INPUT_USER:  # добавить юзеров
+                    # добавить юзеров
+                    if i[0] in constants.CMD_INPUT_USER:
                         ans[0] += 1
-                    if i[0] in constants.CMD_INPUT_SERVICE:  # добавить компонент
+                    # добавить компонент
+                    if i[0] in constants.CMD_INPUT_SERVICE:
                         two, comp, number = i.strip().split(
                             constants.SEPARATOR_COMPONENTS)
                         ans[1].append([self.default_component_name(comp),

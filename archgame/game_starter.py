@@ -46,14 +46,15 @@ def game_starter():
     for i in range(1, q_g + 1, 1):
         inpt_gamer_name_and_class = ""
 
-        while not constants.SEPARATOR in inpt_gamer_name_and_class:
+        while constants.SEPARATOR not in inpt_gamer_name_and_class:
             inpt_gamer_name_and_class = input(texts.ASK_NAME % i).strip()
         n, cl = inpt_gamer_name_and_class.split(constants.SEPARATOR)
 
         while cl not in ["M", "М", "A", "А", "P", "Р",
                          "m", "м", "a", "а", "p", "р"]:
             print("Неверно введен класс")
-            n, cl = input(texts.ASK_NAME % i).strip().split(constants.SEPARATOR)
+            n, cl = input(texts.ASK_NAME % i).strip().split(
+                constants.SEPARATOR)
 
         if cl in ["M", "М", "m", "м"]:
             cl = "M"
