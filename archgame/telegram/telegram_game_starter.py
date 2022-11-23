@@ -226,16 +226,16 @@ def run_trial_game(message, log, bot, storage):
     # Create game
     game_uuid = storage.create_game(game_owner=cid)
 
+    # Create player
+    player = storage.create_player(user_name, cid, game_uuid, user_class, bot)
+    storage.add_player_to_game(game_uuid, player)
+
     # Create bots for game
     bot_classes = set(constants.ALL_CLASSES) - set(user_class)
     for num, bot_class in enumerate(bot_classes):
         bot_player = gamers.TelegaBot(num+1, bot_class)
         log.debug('Add bot %s to game %s', bot_player, game_uuid)
         storage.add_player_to_game(game_uuid, bot_player)
-
-    # Create player
-    player = storage.create_player(user_name, cid, game_uuid, user_class, bot)
-    storage.add_player_to_game(game_uuid, player)
 
     # Run game
     try:

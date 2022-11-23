@@ -179,6 +179,10 @@ class TelegramGameServer(GameServer):
             if gamer.status != constants.USER_READY_ST:
                 return
 
+        for gamer in self.gamers:
+            if gamer.is_bot():
+                gamer.action()
+
         self.end_sprint()
 
         if self.num_sprint == constants.WIN_SCORE:
