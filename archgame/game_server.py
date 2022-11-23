@@ -1,5 +1,6 @@
 # -*-coding: utf-8 -*-
 import logging
+import traceback
 
 from archgame import events as game_events
 from archgame import texts
@@ -27,8 +28,10 @@ class GameServer:
         for num in range(len(self.gamers)):
             try:
                 self.events.random_event(self.gamers, num)
-            except Exception:
+            except Exception as e:
                 self.gamers[num].print_message(texts.EVENT_FAILED)
+                print('Тех. инфа об ошибке, закройте глазки:')
+                traceback.print_exception(e)
             self.gamers[num].class_benefit()
 
     def begin(self, num_sprint, show_blank_lines=True):
