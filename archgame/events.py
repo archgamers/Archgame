@@ -29,7 +29,7 @@ class BaseEvent(object):
 
     def act(self, gamers, num, output_func=None):
         result = self.apply(gamers, num)
-        response = [gamers[num].name + ":", self.random_long_text]
+        response = [gamers[num].name + ":", self.random_long_text, '\n\n']
         if result is None:
             response.append(self.immunity_text)
         else:
@@ -208,6 +208,14 @@ class BonusEvent(BaseEvent):
     amount = 1
     penalty = 1
     short_text = "Пришло %iк, если не тянешь — потеря %iк"
+    long_text = ['''\
+Ваш маркетинг высадил весь бюджет на рекламу, радуйтесь потоку пользователей!
+
+Но вам о рекламе не сказали, посмотрим, насколько готова наша инфра к DDoS.''',
+                 '''\
+О, реклама наконец заработала!
+
+Откуда так много клиентов?!?! 0_0''']
 
     def apply(self, gamers, num):
         # TODO: fix texts
