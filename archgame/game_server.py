@@ -34,11 +34,12 @@ class GameServer:
     def begin(self, num_sprint, show_blank_lines=True):
         if show_blank_lines:
             self.print_all('\n\n\n')
-        self.print_all(texts.SPRINTS % num_sprint)
         if num_sprint == 1:
-            self.print_all(texts.DESC % constants.FIRST_SPRINT_POINTS)
+            self.print_all(texts.SPRINTS % num_sprint + "\n" +
+                           texts.DESC % constants.FIRST_SPRINT_POINTS)
         else:
-            self.print_all(texts.DESC % constants.LIM_POINTS)
+            self.print_all(texts.SPRINTS % num_sprint + "\n" +
+                           texts.DESC % constants.LIM_POINTS)
 
     def print_boards(self):
         all_boards = []
@@ -180,7 +181,7 @@ class TelegramGameServer(GameServer):
                 return
 
         for gamer in self.gamers:
-            if gamer.is_bot():
+            if gamer.is_bot:
                 gamer.action()
 
         self.end_sprint()

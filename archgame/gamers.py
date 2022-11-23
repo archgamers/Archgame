@@ -217,7 +217,6 @@ class Bot(Gamer):
                                   cl,
                                   flag_slow_print=flag_slow_print,
                                   g_cli=g_cli)
-        self.default_start()
 
     @property
     def is_bot(self):
