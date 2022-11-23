@@ -7,13 +7,20 @@ from archgame import constants
 from telebot import formatting
 
 input_speed = {
-    '\n': 0.5,
+    '\n': 0.01,
 }
 
 
 class Cli:
     def __init__(self, slow_print):
         self.slow_print = slow_print
+
+    def _pretty_print(self, text):
+        for char in text:
+            sys.stdout.write(char)
+            sys.stdout.flush()
+            time.sleep(input_speed.get(char, 0.001))
+        print('')
 
     def ask(self, name):
         return input(texts.INPUT_ACTION % name).strip()
@@ -23,24 +30,23 @@ class Cli:
             print("".join(text))
             input('')
             return
-        for line in text:
-            print('')
-            for char in line:
-                sys.stdout.write(char)
-                sys.stdout.flush()
-                time.sleep(input_speed.get(char, 0.03))
+        print('')
+        if isinstance(text, list):
+            for line in text:
+                self._pretty_print(line)
+        else:
+            self._pretty_print(text)
         input('')
 
     def output_print_msg(self, text):
         if not self.slow_print:
             print("".join(text))
             return
-        for line in text:
-            print('')
-            for char in line:
-                sys.stdout.write(char)
-                sys.stdout.flush()
-                time.sleep(input_speed.get(char, 0.03))
+        if isinstance(text, list):
+            for line in text:
+                self._pretty_print(line)
+        else:
+            self._pretty_print(text)
 
     def print_board(self, board, name, class_per, users, cap):
         lines = [""] * 7
