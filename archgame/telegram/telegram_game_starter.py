@@ -229,7 +229,7 @@ def run_trial_game(message, log, bot, storage):
     # Create bots for game
     bot_classes = set(constants.ALL_CLASSES) - set(user_class)
     for num, bot_class in enumerate(bot_classes):
-        bot_player = gamers.TelegaBot(num, bot_class)
+        bot_player = gamers.TelegaBot(num+1, bot_class)
         log.debug('Add bot %s to game %s', bot_player, game_uuid)
         storage.add_player_to_game(game_uuid, bot_player)
 
