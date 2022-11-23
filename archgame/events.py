@@ -29,7 +29,7 @@ class BaseEvent(object):
 
     def act(self, gamers, num, output_func=None):
         result = self.apply(gamers, num)
-        response = [gamers[num].name + ":", self.random_long_text]
+        response = [gamers[num].name + ":", self.random_long_text, '\n\n']
         if result is None:
             response.append(self.immunity_text)
         else:
