@@ -411,12 +411,14 @@ def main():
     @bot.message_handler(commands=['start', 'help'])
     def start_handler(message, res=False):
         log.debug('Send help to chat "%s"', message.chat.id)
-        bot.send_message(message.chat.id, texts.TELEGRAM_HELP)
+        bot.send_message(message.chat.id, texts.TELEGRAM_HELP,
+                         parse_mode='HTML')
 
     @bot.message_handler(commands=[RULES_CMD])
     def rules_handler(message, res=False):
         log.debug('Send rules to chat "%s"', message.chat.id)
-        bot.send_message(message.chat.id, texts.TELEGRAM_RULES)
+        bot.send_message(message.chat.id, texts.TELEGRAM_RULES,
+                         parse_mode='HTML')
 
     @bot.message_handler(commands=[TRIAL_CMD])
     def trial_handler(message, res=False):
