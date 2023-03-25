@@ -1,0 +1,31 @@
+name: events
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
+    - name: Install dependencies
+      run: |
+        sudo pip install tox
+    - name: Generate events
+      run: |
+        tox -e develop run -qq -- archgame_events_generate > events.csv
+        tox -e develop run -qq -- archgame_events_generate shuffle > events_shuffled.csv
+    - name: Store events
+      uses: actions/upload-artifact@v3
+      with:
+        name: events
+        path: |
+          events.csv
+    - name: Store events (shuffled)
+      uses: actions/upload-artifact@v3
+      with:
+        name: events_shuffled
+        path: |
+          events_shuffled.csv
